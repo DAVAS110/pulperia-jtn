@@ -40,6 +40,12 @@ export default function DailyClosure() {
   };
 
   const generatePDF = () => {
+    const pdfFmt = (n) =>
+      "CRC " +
+      Number(n || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      });
     if (!data || !window.jspdf) {
       toast.error("jsPDF no está cargado. Agrega los scripts en index.html");
       return null;
@@ -102,7 +108,7 @@ export default function DailyClosure() {
     const cards = [
       {
         label: "Total Ventas",
-        value: fmt(data.total_sales),
+        value: pdfFmt(data.total_sales),
         color: [200, 87, 10],
       },
       {
@@ -143,9 +149,9 @@ export default function DailyClosure() {
         ...(data.sales_by_method || []).map((s) => [
           s.payment_method === "efectivo" ? "💵 Efectivo" : "📱 SINPE",
           s.count.toString(),
-          fmt(s.total),
+          pdfFmt(s.total),
         ]),
-        ["TOTAL", data.total_count.toString(), fmt(data.total_sales)],
+        ["TOTAL", data.total_count.toString(), pdfFmt(data.total_sales)],
       ],
       margin: { left: 14, right: 14 },
       styles: { fontSize: 10, cellPadding: 4 },
@@ -177,7 +183,7 @@ export default function DailyClosure() {
       head: [["Cuenta", "Saldo Actual"]],
       body: (data.treasury || []).map((t) => [
         t.type === "caja" ? "💵 Caja Física" : "📱 Cuenta SINPE",
-        fmt(t.balance),
+        pdfFmt(t.balance),
       ]),
       margin: { left: 14, right: 14 },
       styles: { fontSize: 10, cellPadding: 4 },
@@ -225,7 +231,7 @@ export default function DailyClosure() {
           doc.text(`Ref: ${sale.sinpe_description}`, 115, y + 5.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(200, 87, 10);
-        doc.text(fmt(sale.total), W - 14, y + 5.5, { align: "right" });
+        doc.text(pdfFmt(sale.total), W - 14, y + 5.5, { align: "right" });
         y += 10;
 
         // Productos de la venta
@@ -235,8 +241,8 @@ export default function DailyClosure() {
           body: items.map((item) => [
             item.product_name,
             item.quantity.toString(),
-            fmt(item.unit_price),
-            fmt(item.subtotal),
+            pdfFmt(item.unit_price),
+            pdfFmt(item.subtotal),
           ]),
           margin: { left: 20, right: 14 },
           styles: { fontSize: 8.5, cellPadding: 2.5 },
