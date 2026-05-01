@@ -8,9 +8,9 @@ const MOVEMENT_LABELS = {
   entrada: "Entrada",
   salida: "Salida",
   ajuste: "Ajuste",
-  pérdida: "Pérdida",
+  pérdida: "Perdida",
   venta: "Venta",
-  anulacion: "Anulación",
+  anulacion: "Anulacion",
 };
 
 export default function DailyClosure() {
@@ -27,7 +27,7 @@ export default function DailyClosure() {
       const { data: res } = await reportsAPI.daily({ date: d || date });
       setData(res);
     } catch {
-      toast.error("Error al cargar datos del día");
+      toast.error("Error al cargar datos del dia");
     } finally {
       setLoading(false);
     }
@@ -40,14 +40,25 @@ export default function DailyClosure() {
   };
 
   const generatePDF = () => {
+    // Format currency - NO special characters, only ASCII
     const pdfFmt = (n) =>
       "CRC " +
       Number(n || 0).toLocaleString("en-US", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       });
+
+    // Format date safely for PDF - removes accents and special chars
+    const safeDateStr = (str) => {
+      if (!str) return "";
+      return String(str)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // remove accents
+        .replace(/[^\x00-\x7F]/g, "?"); // replace non-ASCII with ?
+    };
+
     if (!data || !window.jspdf) {
-      toast.error("jsPDF no está cargado. Agrega los scripts en index.html");
+      toast.error("jsPDF no esta cargado. Agrega los scripts en index.html");
       return null;
     }
 
@@ -68,6 +79,11 @@ export default function DailyClosure() {
       if (y + needed > 270) addPage();
     };
 
+    // Safe versions of formatted strings (no emojis, no special chars)
+    const safeDate = safeDateStr(fmtDate(data.date));
+    const safeGeneratedAt = safeDateStr(fmtDateTime(data.generated_at));
+    const safeGeneratedBy = safeDateStr(data.generated_by || "");
+
     // ── HEADER ──────────────────────────────────────────────
     doc.setFillColor(45, 21, 7);
     doc.rect(0, 0, W, 32, "F");
@@ -77,14 +93,14 @@ export default function DailyClosure() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text("Pulpería JTN", 14, 13);
+    doc.text("Pulperia JTN", 14, 13);
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Cierre de Caja — ${fmtDate(data.date)}`, 14, 22);
+    doc.text(`Cierre de Caja - ${safeDate}`, 14, 22);
     doc.setFontSize(8);
     doc.setTextColor(200, 200, 200);
     doc.text(
-      `Generado: ${fmtDateTime(data.generated_at)} · Por: ${data.generated_by}`,
+      `Generado: ${safeGeneratedAt} | Por: ${safeGeneratedBy}`,
       W - 14,
       22,
       { align: "right" },
@@ -93,18 +109,19 @@ export default function DailyClosure() {
     y = 42;
     doc.setTextColor(26, 18, 8);
 
-    // ── SECCIÓN 1: RESUMEN EJECUTIVO ─────────────────────────
+    // ── SECCION 1: RESUMEN EJECUTIVO ─────────────────────────
     doc.setFillColor(245, 240, 232);
     doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(200, 87, 10);
-    doc.text("RESUMEN DEL DÍA", 18, y + 5.5);
+    doc.text("RESUMEN DEL DIA", 18, y + 5.5);
     doc.setTextColor(26, 18, 8);
     y += 13;
 
     // Cards de resumen en fila
     const cardW = (W - 28 - 8) / 3;
+    const lowStockCount = data.low_stock?.length || 0;
     const cards = [
       {
         label: "Total Ventas",
@@ -118,9 +135,8 @@ export default function DailyClosure() {
       },
       {
         label: "Alertas Stock",
-        value:
-          data.low_stock?.length > 0 ? `⚠ ${data.low_stock.length}` : "✓ OK",
-        color: data.low_stock?.length > 0 ? [192, 57, 43] : [45, 122, 79],
+        value: lowStockCount > 0 ? `! ${lowStockCount}` : "OK",
+        color: lowStockCount > 0 ? [192, 57, 43] : [45, 122, 79],
       },
     ];
 
@@ -141,13 +157,14 @@ export default function DailyClosure() {
     });
     y += 24;
 
-    // Ventas por método de pago
+    // Ventas por metodo de pago
     doc.autoTable({
       startY: y,
-      head: [["Método de Pago", "Transacciones", "Total Recaudado"]],
+      head: [["Metodo de Pago", "Transacciones", "Total Recaudado"]],
       body: [
         ...(data.sales_by_method || []).map((s) => [
-          s.payment_method === "efectivo" ? "💵 Efectivo" : "📱 SINPE",
+          // Replace emoji with ASCII label
+          s.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE",
           s.count.toString(),
           pdfFmt(s.total),
         ]),
@@ -167,14 +184,14 @@ export default function DailyClosure() {
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // ── SECCIÓN 2: TESORERÍA ─────────────────────────────────
+    // ── SECCION 2: TESORERIA ─────────────────────────────────
     checkSpace(40);
     doc.setFillColor(245, 240, 232);
     doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(45, 122, 79);
-    doc.text("SALDO DE TESORERÍA", 18, y + 5.5);
+    doc.text("SALDO DE TESORERIA", 18, y + 5.5);
     doc.setTextColor(26, 18, 8);
     y += 11;
 
@@ -182,7 +199,8 @@ export default function DailyClosure() {
       startY: y,
       head: [["Cuenta", "Saldo Actual"]],
       body: (data.treasury || []).map((t) => [
-        t.type === "caja" ? "💵 Caja Física" : "📱 Cuenta SINPE",
+        // Replace emoji with ASCII label
+        t.type === "caja" ? "[EFE] Caja Fisica" : "[SIN] Cuenta SINPE",
         pdfFmt(t.balance),
       ]),
       margin: { left: 14, right: 14 },
@@ -197,7 +215,7 @@ export default function DailyClosure() {
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // ── SECCIÓN 3: DETALLE DE VENTAS ─────────────────────────
+    // ── SECCION 3: DETALLE DE VENTAS ─────────────────────────
     if ((data.sales_detail || []).length > 0) {
       checkSpace(20);
       doc.setFillColor(245, 240, 232);
@@ -212,6 +230,13 @@ export default function DailyClosure() {
       data.sales_detail.forEach((sale, idx) => {
         checkSpace(30);
 
+        const safeHora = safeDateStr(sale.hora || "");
+        const payLabel =
+          sale.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE";
+        const safeRef = sale.sinpe_description
+          ? `Ref: ${safeDateStr(sale.sinpe_description)}`
+          : "";
+
         // Header de la venta
         doc.setFillColor(219, 234, 254);
         doc.roundedRect(14, y, W - 28, 8, 1, 1, "F");
@@ -221,14 +246,9 @@ export default function DailyClosure() {
         doc.text(`Venta #${String(idx + 1).padStart(3, "0")}`, 17, y + 5.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(60, 60, 60);
-        doc.text(`${sale.hora}`, 60, y + 5.5);
-        doc.text(
-          `${sale.payment_method === "efectivo" ? "💵 Efectivo" : "📱 SINPE"}`,
-          85,
-          y + 5.5,
-        );
-        if (sale.sinpe_description)
-          doc.text(`Ref: ${sale.sinpe_description}`, 115, y + 5.5);
+        doc.text(safeHora, 60, y + 5.5);
+        doc.text(payLabel, 85, y + 5.5);
+        if (safeRef) doc.text(safeRef, 130, y + 5.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(200, 87, 10);
         doc.text(pdfFmt(sale.total), W - 14, y + 5.5, { align: "right" });
@@ -239,7 +259,7 @@ export default function DailyClosure() {
         doc.autoTable({
           startY: y,
           body: items.map((item) => [
-            item.product_name,
+            safeDateStr(item.product_name),
             item.quantity.toString(),
             pdfFmt(item.unit_price),
             pdfFmt(item.subtotal),
@@ -261,7 +281,7 @@ export default function DailyClosure() {
       y += 4;
     }
 
-    // ── SECCIÓN 4: MOVIMIENTOS DE INVENTARIO ──────────────────
+    // ── SECCION 4: MOVIMIENTOS DE INVENTARIO ──────────────────
     if ((data.movements || []).length > 0) {
       checkSpace(20);
       doc.setFillColor(245, 240, 232);
@@ -281,11 +301,11 @@ export default function DailyClosure() {
         startY: y,
         head: [["Producto", "SKU", "Tipo", "Cantidad", "Motivo"]],
         body: data.movements.map((m) => [
-          m.product_name,
+          safeDateStr(m.product_name),
           m.sku,
           MOVEMENT_LABELS[m.type] || m.type,
           m.type === "entrada" ? `+${m.quantity}` : `-${m.quantity}`,
-          m.reason || "—",
+          safeDateStr(m.reason || "-"),
         ]),
         margin: { left: 14, right: 14 },
         styles: { fontSize: 9, cellPadding: 2.5 },
@@ -300,7 +320,7 @@ export default function DailyClosure() {
       y = doc.lastAutoTable.finalY + 10;
     }
 
-    // ── SECCIÓN 5: BAJO STOCK ─────────────────────────────────
+    // ── SECCION 5: BAJO STOCK ─────────────────────────────────
     if ((data.low_stock || []).length > 0) {
       checkSpace(20);
       doc.setFillColor(253, 232, 230);
@@ -309,7 +329,7 @@ export default function DailyClosure() {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(192, 57, 43);
       doc.text(
-        `⚠ ALERTA: ${data.low_stock.length} PRODUCTOS CON BAJO STOCK`,
+        `ALERTA: ${data.low_stock.length} PRODUCTOS CON BAJO STOCK`,
         18,
         y + 5.5,
       );
@@ -318,11 +338,11 @@ export default function DailyClosure() {
 
       doc.autoTable({
         startY: y,
-        head: [["Producto", "SKU", "Categoría", "Stock Actual", "Mínimo"]],
+        head: [["Producto", "SKU", "Categoria", "Stock Actual", "Minimo"]],
         body: data.low_stock.map((p) => [
-          p.name,
+          safeDateStr(p.name),
           p.sku,
-          p.category_name || "—",
+          safeDateStr(p.category_name || "-"),
           p.stock.toString(),
           p.min_stock.toString(),
         ]),
@@ -349,8 +369,8 @@ export default function DailyClosure() {
       doc.rect(0, 285, W, 12, "F");
       doc.setFontSize(8);
       doc.setTextColor(200, 200, 200);
-      doc.text(`Pulpería JTN · Cierre de Caja ${fmtDate(data.date)}`, 14, 292);
-      doc.text(`Página ${i} de ${totalPages}`, W - 14, 292, { align: "right" });
+      doc.text(`Pulperia JTN - Cierre de Caja ${safeDate}`, 14, 292);
+      doc.text(`Pagina ${i} de ${totalPages}`, W - 14, 292, { align: "right" });
     }
 
     return doc;
@@ -378,11 +398,11 @@ export default function DailyClosure() {
         html: `
           <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
             <div style="background:#2d1507;color:white;padding:24px;border-radius:12px 12px 0 0;border-bottom:4px solid #c8570a">
-              <h2 style="margin:0;font-size:22px">🏪 Pulpería JTN</h2>
-              <p style="margin:6px 0 0;opacity:0.8;font-size:14px">Cierre de Caja — ${fmtDate(data.date)}</p>
+              <h2 style="margin:0;font-size:22px">Pulperia JTN</h2>
+              <p style="margin:6px 0 0;opacity:0.8;font-size:14px">Cierre de Caja &mdash; ${fmtDate(data.date)}</p>
             </div>
             <div style="background:#faf7f2;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e8dfd0">
-              <p style="color:#1a1208;font-size:14px">Adjunto el informe de cierre de caja del día <strong>${fmtDate(data.date)}</strong>.</p>
+              <p style="color:#1a1208;font-size:14px">Adjunto el informe de cierre de caja del dia <strong>${fmtDate(data.date)}</strong>.</p>
               <table style="width:100%;border-collapse:collapse;margin:16px 0">
                 <tr><td style="padding:10px 14px;background:#f5f0e8;font-weight:600;font-size:13px;color:#6b5c42">Total Ventas</td>
                     <td style="padding:10px 14px;background:#f5f0e8;font-weight:800;font-size:16px;color:#c8570a;text-align:right">${fmt(data.total_sales)}</td></tr>
@@ -391,16 +411,16 @@ export default function DailyClosure() {
                 ${(data.treasury || [])
                   .map(
                     (t) => `
-                <tr><td style="padding:10px 14px;background:#f5f0e8;font-size:13px;color:#6b5c42">${t.type === "caja" ? "💵 Saldo Caja" : "📱 Saldo SINPE"}</td>
+                <tr><td style="padding:10px 14px;background:#f5f0e8;font-size:13px;color:#6b5c42">${t.type === "caja" ? "Saldo Caja" : "Saldo SINPE"}</td>
                     <td style="padding:10px 14px;background:#f5f0e8;font-weight:700;text-align:right">${fmt(t.balance)}</td></tr>`,
                   )
                   .join("")}
                 <tr><td style="padding:10px 14px;font-size:13px;color:#6b5c42">Alertas de Stock</td>
                     <td style="padding:10px 14px;font-weight:600;text-align:right;color:${data.low_stock?.length > 0 ? "#c0392b" : "#2d7a4f"}">
-                      ${data.low_stock?.length > 0 ? `⚠️ ${data.low_stock.length} productos` : "✅ Todo OK"}</td></tr>
+                      ${data.low_stock?.length > 0 ? `${data.low_stock.length} productos con bajo stock` : "Todo OK"}</td></tr>
               </table>
               <p style="color:#a8937a;font-size:12px;margin-top:20px;border-top:1px solid #e8dfd0;padding-top:12px">
-                Generado por: <strong>${data.generated_by}</strong> · ${fmtDateTime(data.generated_at)}
+                Generado por: <strong>${data.generated_by}</strong> &middot; ${fmtDateTime(data.generated_at)}
               </p>
             </div>
           </div>`,
@@ -416,13 +436,13 @@ export default function DailyClosure() {
   return (
     <>
       <button className="btn btn-ghost btn-sm" onClick={openModal}>
-        📋 Cierre de Caja
+        Cierre de Caja
       </button>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="📋 Cierre de Caja Diario"
+        title="Cierre de Caja Diario"
         maxWidth={680}
       >
         <div
@@ -446,7 +466,7 @@ export default function DailyClosure() {
             onClick={() => load(date)}
             disabled={loading}
           >
-            {loading ? "Cargando…" : "🔄 Cargar"}
+            {loading ? "Cargando..." : "Cargar"}
           </button>
         </div>
 
@@ -458,7 +478,7 @@ export default function DailyClosure() {
               color: "var(--text3)",
             }}
           >
-            Cargando datos…
+            Cargando datos...
           </div>
         )}
 
@@ -488,7 +508,7 @@ export default function DailyClosure() {
                     marginBottom: 2,
                   }}
                 >
-                  VENTAS DEL DÍA
+                  VENTAS DEL DIA
                 </div>
                 <div
                   style={{
@@ -556,7 +576,7 @@ export default function DailyClosure() {
                   .slice(0, 3)
                   .map((p) => p.name)
                   .join(", ")}
-                {data.low_stock.length > 3 ? "…" : ""}
+                {data.low_stock.length > 3 ? "..." : ""}
               </div>
             )}
 
@@ -564,7 +584,7 @@ export default function DailyClosure() {
             {data.sales_detail?.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                  Ventas del día ({data.sales_detail.length})
+                  Ventas del dia ({data.sales_detail.length})
                 </div>
                 <div
                   style={{
@@ -631,9 +651,9 @@ export default function DailyClosure() {
                         {(sale.items || [])
                           .filter(Boolean)
                           .map(
-                            (item) => `${item.product_name} ×${item.quantity}`,
+                            (item) => `${item.product_name} x${item.quantity}`,
                           )
-                          .join(" · ")}
+                          .join(" | ")}
                       </div>
                     </div>
                   ))}
@@ -674,7 +694,7 @@ export default function DailyClosure() {
                   onClick={sendEmailFn}
                   disabled={sending}
                 >
-                  {sending ? "Enviando…" : "📤 Enviar"}
+                  {sending ? "Enviando..." : "Enviar"}
                 </button>
               </div>
             </div>
@@ -684,7 +704,7 @@ export default function DailyClosure() {
                 Cerrar
               </button>
               <button className="btn btn-accent" onClick={downloadPDF}>
-                ⬇️ Descargar PDF
+                Descargar PDF
               </button>
             </div>
           </>
