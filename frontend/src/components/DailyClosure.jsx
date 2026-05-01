@@ -13,62 +13,78 @@ const MOVEMENT_LABELS = {
   anulacion: "Anulacion",
 };
 
+const localDateStr = (d = new Date()) => {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
+};
+
 export default function DailyClosure() {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateFrom, setDateFrom] = useState(localDateStr);
+  const [dateTo, setDateTo] = useState(localDateStr);
   const [email, setEmail] = useState("vargasariasdavid110@gmail.com");
   const [sending, setSending] = useState(false);
 
-  const load = async (d) => {
-    const targetDate = d || date;
+  // ── Helpers ──────────────────────────────────────────────
+  const safeDateStr = (str) => {
+    if (!str) return "";
+    return String(str)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x00-\x7F]/g, "?");
+  };
+
+  const pdfFmt = (n) =>
+    "CRC " +
+    Number(n || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+
+  // ── Load data ────────────────────────────────────────────
+  const load = async (from, to) => {
+    if (!from || !to) return toast.error("Selecciona ambas fechas");
+    if (from > to)
+      return toast.error(
+        "La fecha de inicio no puede ser mayor a la fecha fin",
+      );
+
     setLoading(true);
+    setData(null);
     try {
-      const { data: res } = await reportsAPI.daily({ date: targetDate });
-      // Diagnostic — check browser console if ventas faltan
-      console.log("[DailyClosure] Fecha consultada:", targetDate);
+      const { data: res } = await reportsAPI.daily({
+        date_from: from,
+        date_to: to,
+      });
+      console.log("[DailyClosure] Rango:", from, "->", to);
       console.log(
-        "[DailyClosure] sales_detail recibidas:",
+        "[DailyClosure] sales_detail:",
         res?.sales_detail?.length,
         res?.sales_detail,
       );
-      console.log("[DailyClosure] total_count:", res?.total_count);
       setData(res);
     } catch (err) {
       console.error("[DailyClosure] Error:", err);
-      toast.error("Error al cargar datos del dia");
+      toast.error("Error al cargar datos");
     } finally {
       setLoading(false);
     }
   };
 
-  const openModal = async () => {
+  const openModal = () => {
     setOpen(true);
     setData(null);
-    await load(date); // pass date explicitly to avoid stale closure
   };
 
+  // ── PDF generation ────────────────────────────────────────
   const generatePDF = () => {
-    // Format currency - NO special characters, only ASCII
-    const pdfFmt = (n) =>
-      "CRC " +
-      Number(n || 0).toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      });
-
-    // Format date safely for PDF - removes accents and special chars
-    const safeDateStr = (str) => {
-      if (!str) return "";
-      return String(str)
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // remove accents
-        .replace(/[^\x00-\x7F]/g, "?"); // replace non-ASCII with ?
-    };
-
     if (!data || !window.jspdf) {
-      toast.error("jsPDF no esta cargado. Agrega los scripts en index.html");
+      toast.error("jsPDF no esta cargado.");
       return null;
     }
 
@@ -89,12 +105,14 @@ export default function DailyClosure() {
       if (y + needed > 270) addPage();
     };
 
-    // Safe versions of formatted strings (no emojis, no special chars)
-    const safeDate = safeDateStr(fmtDate(data.date));
+    const isRange = dateFrom !== dateTo;
+    const safeFrom = safeDateStr(fmtDate(dateFrom));
+    const safeTo = safeDateStr(fmtDate(dateTo));
+    const periodLabel = isRange ? `${safeFrom} al ${safeTo}` : safeFrom;
     const safeGeneratedAt = safeDateStr(fmtDateTime(data.generated_at));
     const safeGeneratedBy = safeDateStr(data.generated_by || "");
 
-    // ── HEADER ──────────────────────────────────────────────
+    // ── HEADER ───────────────────────────────────────────────
     doc.setFillColor(45, 21, 7);
     doc.rect(0, 0, W, 32, "F");
     doc.setFillColor(200, 87, 10);
@@ -106,7 +124,13 @@ export default function DailyClosure() {
     doc.text("Pulperia JTN", 14, 13);
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Cierre de Caja - ${safeDate}`, 14, 22);
+    doc.text(
+      isRange
+        ? `Reporte de Ventas - ${periodLabel}`
+        : `Cierre de Caja - ${periodLabel}`,
+      14,
+      22,
+    );
     doc.setFontSize(8);
     doc.setTextColor(200, 200, 200);
     doc.text(
@@ -119,17 +143,16 @@ export default function DailyClosure() {
     y = 42;
     doc.setTextColor(26, 18, 8);
 
-    // ── SECCION 1: RESUMEN EJECUTIVO ─────────────────────────
+    // ── SECCION 1: RESUMEN ────────────────────────────────────
     doc.setFillColor(245, 240, 232);
     doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(200, 87, 10);
-    doc.text("RESUMEN DEL DIA", 18, y + 5.5);
+    doc.text(isRange ? "RESUMEN DEL PERIODO" : "RESUMEN DEL DIA", 18, y + 5.5);
     doc.setTextColor(26, 18, 8);
     y += 13;
 
-    // Cards de resumen en fila
     const cardW = (W - 28 - 8) / 3;
     const lowStockCount = data.low_stock?.length || 0;
     const cards = [
@@ -140,7 +163,7 @@ export default function DailyClosure() {
       },
       {
         label: "Transacciones",
-        value: data.total_count.toString(),
+        value: String(data.total_count),
         color: [45, 122, 79],
       },
       {
@@ -173,12 +196,11 @@ export default function DailyClosure() {
       head: [["Metodo de Pago", "Transacciones", "Total Recaudado"]],
       body: [
         ...(data.sales_by_method || []).map((s) => [
-          // Replace emoji with ASCII label
           s.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE",
           s.count.toString(),
           pdfFmt(s.total),
         ]),
-        ["TOTAL", data.total_count.toString(), pdfFmt(data.total_sales)],
+        ["TOTAL", String(data.total_count), pdfFmt(data.total_sales)],
       ],
       margin: { left: 14, right: 14 },
       styles: { fontSize: 10, cellPadding: 4 },
@@ -194,7 +216,7 @@ export default function DailyClosure() {
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // ── SECCION 2: TESORERIA ─────────────────────────────────
+    // ── SECCION 2: TESORERIA ──────────────────────────────────
     checkSpace(40);
     doc.setFillColor(245, 240, 232);
     doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
@@ -209,7 +231,6 @@ export default function DailyClosure() {
       startY: y,
       head: [["Cuenta", "Saldo Actual"]],
       body: (data.treasury || []).map((t) => [
-        // Replace emoji with ASCII label
         t.type === "caja" ? "[EFE] Caja Fisica" : "[SIN] Cuenta SINPE",
         pdfFmt(t.balance),
       ]),
@@ -225,7 +246,7 @@ export default function DailyClosure() {
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // ── SECCION 3: DETALLE DE VENTAS ─────────────────────────
+    // ── SECCION 3: DETALLE DE VENTAS ──────────────────────────
     if ((data.sales_detail || []).length > 0) {
       checkSpace(20);
       doc.setFillColor(245, 240, 232);
@@ -241,13 +262,15 @@ export default function DailyClosure() {
         checkSpace(30);
 
         const safeHora = safeDateStr(sale.hora || "");
+        const safeSaleDate = sale.fecha
+          ? safeDateStr(fmtDate(sale.fecha)) + " "
+          : "";
         const payLabel =
           sale.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE";
         const safeRef = sale.sinpe_description
           ? `Ref: ${safeDateStr(sale.sinpe_description)}`
           : "";
 
-        // Header de la venta
         doc.setFillColor(219, 234, 254);
         doc.roundedRect(14, y, W - 28, 8, 1, 1, "F");
         doc.setFontSize(9);
@@ -256,15 +279,14 @@ export default function DailyClosure() {
         doc.text(`Venta #${String(idx + 1).padStart(3, "0")}`, 17, y + 5.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(60, 60, 60);
-        doc.text(safeHora, 60, y + 5.5);
-        doc.text(payLabel, 85, y + 5.5);
+        doc.text(`${safeSaleDate}${safeHora}`, 55, y + 5.5);
+        doc.text(payLabel, 95, y + 5.5);
         if (safeRef) doc.text(safeRef, 130, y + 5.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(200, 87, 10);
         doc.text(pdfFmt(sale.total), W - 14, y + 5.5, { align: "right" });
         y += 10;
 
-        // Productos de la venta
         const items = (sale.items || []).filter(Boolean);
         doc.autoTable({
           startY: y,
@@ -371,7 +393,7 @@ export default function DailyClosure() {
       });
     }
 
-    // ── FOOTER ───────────────────────────────────────────────
+    // ── FOOTER ────────────────────────────────────────────────
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
@@ -379,7 +401,7 @@ export default function DailyClosure() {
       doc.rect(0, 285, W, 12, "F");
       doc.setFontSize(8);
       doc.setTextColor(200, 200, 200);
-      doc.text(`Pulperia JTN - Cierre de Caja ${safeDate}`, 14, 292);
+      doc.text(`Pulperia JTN - ${periodLabel}`, 14, 292);
       doc.text(`Pagina ${i} de ${totalPages}`, W - 14, 292, { align: "right" });
     }
 
@@ -389,7 +411,8 @@ export default function DailyClosure() {
   const downloadPDF = () => {
     const doc = generatePDF();
     if (!doc) return;
-    doc.save(`cierre-caja-${data.date}.pdf`);
+    const suffix = dateFrom === dateTo ? dateFrom : `${dateFrom}_${dateTo}`;
+    doc.save(`cierre-caja-${suffix}.pdf`);
     toast.success("PDF descargado");
   };
 
@@ -398,21 +421,27 @@ export default function DailyClosure() {
     const doc = generatePDF();
     if (!doc) return;
     setSending(true);
+    const isRange = dateFrom !== dateTo;
+    const periodLabel = isRange
+      ? `${fmtDate(dateFrom)} al ${fmtDate(dateTo)}`
+      : fmtDate(dateFrom);
     try {
       const pdfBase64 = doc.output("datauristring").split(",")[1];
+      const suffix = dateFrom === dateTo ? dateFrom : `${dateFrom}_${dateTo}`;
       const { data: res } = await reportsAPI.sendEmail({
         to: email.trim(),
-        date: data.date,
+        date: dateFrom,
+        date_to: dateTo,
         pdfBase64,
-        filename: `cierre-caja-${data.date}.pdf`,
+        filename: `cierre-caja-${suffix}.pdf`,
         html: `
           <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
             <div style="background:#2d1507;color:white;padding:24px;border-radius:12px 12px 0 0;border-bottom:4px solid #c8570a">
               <h2 style="margin:0;font-size:22px">Pulperia JTN</h2>
-              <p style="margin:6px 0 0;opacity:0.8;font-size:14px">Cierre de Caja &mdash; ${fmtDate(data.date)}</p>
+              <p style="margin:6px 0 0;opacity:0.8;font-size:14px">${isRange ? "Reporte de Ventas" : "Cierre de Caja"} &mdash; ${periodLabel}</p>
             </div>
             <div style="background:#faf7f2;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e8dfd0">
-              <p style="color:#1a1208;font-size:14px">Adjunto el informe de cierre de caja del dia <strong>${fmtDate(data.date)}</strong>.</p>
+              <p style="color:#1a1208;font-size:14px">Adjunto el informe del periodo <strong>${periodLabel}</strong>.</p>
               <table style="width:100%;border-collapse:collapse;margin:16px 0">
                 <tr><td style="padding:10px 14px;background:#f5f0e8;font-weight:600;font-size:13px;color:#6b5c42">Total Ventas</td>
                     <td style="padding:10px 14px;background:#f5f0e8;font-weight:800;font-size:16px;color:#c8570a;text-align:right">${fmt(data.total_sales)}</td></tr>
@@ -443,6 +472,7 @@ export default function DailyClosure() {
     }
   };
 
+  // ── Render ────────────────────────────────────────────────
   return (
     <>
       <button className="btn btn-ghost btn-sm" onClick={openModal}>
@@ -452,32 +482,124 @@ export default function DailyClosure() {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Cierre de Caja Diario"
-        maxWidth={680}
+        title="Cierre de Caja / Reporte de Ventas"
+        maxWidth={720}
       >
+        {/* ── Selector de rango ── */}
         <div
           style={{
-            display: "flex",
-            gap: 10,
-            alignItems: "flex-end",
-            marginBottom: 18,
+            background: "var(--surface2)",
+            borderRadius: 10,
+            padding: "14px 16px",
+            marginBottom: 16,
           }}
         >
-          <div className="field" style={{ flex: 1, marginBottom: 0 }}>
-            <label>Fecha del informe</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-          <button
-            className="btn btn-accent"
-            onClick={() => load(date)}
-            disabled={loading}
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 13,
+              marginBottom: 10,
+              color: "var(--text2)",
+            }}
           >
-            {loading ? "Cargando..." : "Cargar"}
-          </button>
+            Rango de fechas
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "flex-end",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              className="field"
+              style={{ flex: 1, minWidth: 140, marginBottom: 0 }}
+            >
+              <label style={{ fontSize: 12 }}>Desde</label>
+              <input
+                type="date"
+                value={dateFrom}
+                max={dateTo}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div
+              className="field"
+              style={{ flex: 1, minWidth: 140, marginBottom: 0 }}
+            >
+              <label style={{ fontSize: 12 }}>Hasta</label>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn btn-accent"
+              onClick={() => load(dateFrom, dateTo)}
+              disabled={loading}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {loading ? "Cargando..." : "Cargar"}
+            </button>
+          </div>
+
+          {/* Shortcuts */}
+          <div
+            style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}
+          >
+            {[
+              {
+                label: "Hoy",
+                fn: () => {
+                  const t = localDateStr();
+                  setDateFrom(t);
+                  setDateTo(t);
+                },
+              },
+              {
+                label: "Ayer",
+                fn: () => {
+                  const d = new Date();
+                  d.setDate(d.getDate() - 1);
+                  const s = d.toISOString().slice(0, 10);
+                  setDateFrom(s);
+                  setDateTo(s);
+                },
+              },
+              {
+                label: "Ultimos 7 dias",
+                fn: () => {
+                  const d = new Date();
+                  d.setDate(d.getDate() - 6);
+                  setDateFrom(d.toISOString().slice(0, 10));
+                  setDateTo(localDateStr());
+                },
+              },
+              {
+                label: "Este mes",
+                fn: () => {
+                  const now = new Date();
+                  const first = new Date(now.getFullYear(), now.getMonth(), 1)
+                    .toISOString()
+                    .slice(0, 10);
+                  setDateFrom(first);
+                  setDateTo(localDateStr());
+                },
+              },
+            ].map(({ label, fn }) => (
+              <button
+                key={label}
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: 11, padding: "4px 10px" }}
+                onClick={fn}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading && (
@@ -489,6 +611,19 @@ export default function DailyClosure() {
             }}
           >
             Cargando datos...
+          </div>
+        )}
+
+        {!loading && !data && (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "30px 0",
+              color: "var(--text3)",
+              fontSize: 13,
+            }}
+          >
+            Selecciona un rango y presiona Cargar
           </div>
         )}
 
@@ -518,7 +653,9 @@ export default function DailyClosure() {
                     marginBottom: 2,
                   }}
                 >
-                  VENTAS DEL DIA
+                  {dateFrom !== dateTo
+                    ? "VENTAS DEL PERIODO"
+                    : "VENTAS DEL DIA"}
                 </div>
                 <div
                   style={{
@@ -591,10 +728,10 @@ export default function DailyClosure() {
             )}
 
             {/* Preview ventas */}
-            {data.sales_detail?.length > 0 && (
+            {data.sales_detail?.length > 0 ? (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                  Ventas del dia ({data.sales_detail.length})
+                  Ventas ({data.sales_detail.length})
                 </div>
                 <div
                   style={{
@@ -623,13 +760,21 @@ export default function DailyClosure() {
                         <div
                           style={{
                             display: "flex",
-                            gap: 10,
+                            gap: 8,
                             alignItems: "center",
+                            flexWrap: "wrap",
                           }}
                         >
                           <span style={{ fontSize: 12, color: "var(--text3)" }}>
                             #{String(i + 1).padStart(3, "0")}
                           </span>
+                          {sale.fecha && (
+                            <span
+                              style={{ fontSize: 12, color: "var(--text3)" }}
+                            >
+                              {fmtDate(sale.fecha)}
+                            </span>
+                          )}
                           <span style={{ fontSize: 12, color: "var(--text3)" }}>
                             {sale.hora}
                           </span>
@@ -668,6 +813,18 @@ export default function DailyClosure() {
                     </div>
                   ))}
                 </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "20px 0",
+                  color: "var(--text3)",
+                  fontSize: 13,
+                  marginBottom: 16,
+                }}
+              >
+                No hay ventas en este periodo
               </div>
             )}
 
