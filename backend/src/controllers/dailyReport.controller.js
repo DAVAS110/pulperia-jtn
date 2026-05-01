@@ -12,19 +12,51 @@ const dailyReport = async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().slice(0, 10);
 
-    const [salesRes, movRes, treasuryRes, lowStockRes] = await Promise.all([
-      pool.query(
-        `
+    const [salesRes, salesDetailRes, movRes, treasuryRes, lowStockRes] =
+      await Promise.all([
+        // Resumen por método de pago
+        pool.query(
+          `
         SELECT payment_method, COUNT(*)::int AS count, SUM(total)::numeric AS total
         FROM sales
         WHERE DATE(created_at) = $1 AND status = 'completada'
         GROUP BY payment_method
       `,
-        [date],
-      ),
+          [date],
+        ),
 
-      pool.query(
-        `
+        // Detalle completo de cada venta con sus productos
+        pool.query(
+          `
+        SELECT
+          s.id,
+          TO_CHAR(s.created_at AT TIME ZONE 'America/Costa_Rica', 'HH12:MI AM') AS hora,
+          s.total,
+          s.payment_method,
+          s.received_by,
+          s.sinpe_description,
+          u.name AS cajero,
+          json_agg(
+            json_build_object(
+              'product_name', si.product_name,
+              'quantity', si.quantity,
+              'unit_price', si.unit_price,
+              'subtotal', si.subtotal
+            ) ORDER BY si.product_name
+          ) AS items
+        FROM sales s
+        LEFT JOIN users u ON u.id = s.user_id
+        LEFT JOIN sale_items si ON si.sale_id = s.id
+        WHERE DATE(s.created_at) = $1 AND s.status = 'completada'
+        GROUP BY s.id, u.name
+        ORDER BY s.created_at ASC
+      `,
+          [date],
+        ),
+
+        // Movimientos de inventario
+        pool.query(
+          `
         SELECT m.*, p.name AS product_name, p.sku, u.name AS user_name
         FROM inventory_movements m
         JOIN products p ON p.id = m.product_id
@@ -32,12 +64,14 @@ const dailyReport = async (req, res) => {
         WHERE DATE(m.created_at) = $1
         ORDER BY m.created_at DESC
       `,
-        [date],
-      ),
+          [date],
+        ),
 
-      pool.query("SELECT * FROM treasury_accounts ORDER BY type"),
+        // Saldo tesorería
+        pool.query("SELECT * FROM treasury_accounts ORDER BY type"),
 
-      pool.query(`
+        // Bajo stock
+        pool.query(`
         SELECT p.name, p.sku, p.stock, p.min_stock, c.name AS category_name
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
@@ -45,7 +79,7 @@ const dailyReport = async (req, res) => {
         ORDER BY p.stock ASC
         LIMIT 20
       `),
-    ]);
+      ]);
 
     const totalSales = salesRes.rows.reduce(
       (s, r) => s + parseFloat(r.total),
@@ -56,6 +90,7 @@ const dailyReport = async (req, res) => {
     res.json({
       date,
       sales_by_method: salesRes.rows,
+      sales_detail: salesDetailRes.rows,
       total_sales: totalSales,
       total_count: totalCount,
       movements: movRes.rows,
@@ -74,13 +109,12 @@ const dailyReport = async (req, res) => {
 const sendEmail = async (req, res) => {
   try {
     const { to, subject, html, pdfBase64, filename, date } = req.body;
-
     if (!to)
       return res.status(400).json({ error: "El destinatario es requerido" });
 
     const resend = getResend();
     const from =
-      process.env.RESEND_FROM || "Pulperia JTN <onboarding@resend.dev>";
+      process.env.RESEND_FROM || "Pulpería JTN <onboarding@resend.dev>";
 
     await resend.emails.send({
       from,
@@ -104,9 +138,11 @@ const sendEmail = async (req, res) => {
     res.json({ message: `Informe enviado a ${to}` });
   } catch (err) {
     console.error("Send email error:", err);
-    res.status(500).json({
-      error: "Error al enviar: " + (err.message || "Error desconocido"),
-    });
+    res
+      .status(500)
+      .json({
+        error: "Error al enviar: " + (err.message || "Error desconocido"),
+      });
   }
 };
 

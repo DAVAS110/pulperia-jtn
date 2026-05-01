@@ -52,145 +52,267 @@ export default function DailyClosure() {
       format: "a4",
     });
     const W = doc.internal.pageSize.getWidth();
-    let y = 18;
+    let y = 0;
 
-    // Header
+    const addPage = () => {
+      doc.addPage();
+      y = 18;
+    };
+    const checkSpace = (needed) => {
+      if (y + needed > 270) addPage();
+    };
+
+    // ── HEADER ──────────────────────────────────────────────
+    doc.setFillColor(45, 21, 7);
+    doc.rect(0, 0, W, 32, "F");
     doc.setFillColor(200, 87, 10);
-    doc.rect(0, 0, W, 28, "F");
+    doc.rect(0, 28, W, 4, "F");
+
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text("Pulperia JTN", 14, 13);
-    doc.setFontSize(10);
+    doc.text("Pulpería JTN", 14, 13);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Cierre de Caja — ${fmtDate(data.date)}`, 14, 21);
-    doc.setFontSize(9);
+    doc.text(`Cierre de Caja — ${fmtDate(data.date)}`, 14, 22);
+    doc.setFontSize(8);
+    doc.setTextColor(200, 200, 200);
     doc.text(
       `Generado: ${fmtDateTime(data.generated_at)} · Por: ${data.generated_by}`,
       W - 14,
-      21,
+      22,
       { align: "right" },
     );
 
-    y = 38;
+    y = 42;
     doc.setTextColor(26, 18, 8);
 
-    // Ventas del día
-    doc.setFontSize(12);
+    // ── SECCIÓN 1: RESUMEN EJECUTIVO ─────────────────────────
+    doc.setFillColor(245, 240, 232);
+    doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("Ventas del Día", 14, y);
-    y += 6;
+    doc.setTextColor(200, 87, 10);
+    doc.text("RESUMEN DEL DÍA", 18, y + 5.5);
+    doc.setTextColor(26, 18, 8);
+    y += 13;
 
-    const salesRows = (data.sales_by_method || []).map((s) => [
-      s.payment_method === "efectivo" ? "Efectivo" : "SINPE",
-      s.count.toString(),
-      fmt(s.total),
-    ]);
-    if (!salesRows.length) salesRows.push(["Sin ventas", "—", "—"]);
-    salesRows.push([
-      "TOTAL",
-      data.total_count.toString(),
-      fmt(data.total_sales),
-    ]);
+    // Cards de resumen en fila
+    const cardW = (W - 28 - 8) / 3;
+    const cards = [
+      {
+        label: "Total Ventas",
+        value: fmt(data.total_sales),
+        color: [200, 87, 10],
+      },
+      {
+        label: "Transacciones",
+        value: data.total_count.toString(),
+        color: [45, 122, 79],
+      },
+      {
+        label: "Alertas Stock",
+        value:
+          data.low_stock?.length > 0 ? `⚠ ${data.low_stock.length}` : "✓ OK",
+        color: data.low_stock?.length > 0 ? [192, 57, 43] : [45, 122, 79],
+      },
+    ];
 
+    cards.forEach((card, i) => {
+      const x = 14 + i * (cardW + 4);
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...card.color);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(x, y, cardW, 18, 2, 2, "FD");
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 90, 70);
+      doc.text(card.label, x + cardW / 2, y + 6, { align: "center" });
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...card.color);
+      doc.text(card.value, x + cardW / 2, y + 14, { align: "center" });
+    });
+    y += 24;
+
+    // Ventas por método de pago
     doc.autoTable({
       startY: y,
-      head: [["Método", "Transacciones", "Total"]],
-      body: salesRows,
+      head: [["Método de Pago", "Transacciones", "Total Recaudado"]],
+      body: [
+        ...(data.sales_by_method || []).map((s) => [
+          s.payment_method === "efectivo" ? "💵 Efectivo" : "📱 SINPE",
+          s.count.toString(),
+          fmt(s.total),
+        ]),
+        ["TOTAL", data.total_count.toString(), fmt(data.total_sales)],
+      ],
       margin: { left: 14, right: 14 },
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: {
-        fillColor: [200, 87, 10],
-        textColor: 255,
-        fontStyle: "bold",
-      },
+      styles: { fontSize: 10, cellPadding: 4 },
+      headStyles: { fillColor: [45, 21, 7], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [250, 247, 242] },
       didParseCell: (d) => {
-        if (d.row.index === salesRows.length - 1) {
+        if (d.row.index === (data.sales_by_method?.length || 0)) {
           d.cell.styles.fontStyle = "bold";
-          d.cell.styles.fillColor = [245, 240, 232];
+          d.cell.styles.fillColor = [200, 87, 10];
+          d.cell.styles.textColor = 255;
         }
       },
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // Saldo de Tesorería
-    doc.setFontSize(12);
+    // ── SECCIÓN 2: TESORERÍA ─────────────────────────────────
+    checkSpace(40);
+    doc.setFillColor(245, 240, 232);
+    doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("Saldo Actual de Tesorería", 14, y);
-    y += 6;
+    doc.setTextColor(45, 122, 79);
+    doc.text("SALDO DE TESORERÍA", 18, y + 5.5);
+    doc.setTextColor(26, 18, 8);
+    y += 11;
 
     doc.autoTable({
       startY: y,
       head: [["Cuenta", "Saldo Actual"]],
       body: (data.treasury || []).map((t) => [
-        t.type === "caja" ? "Caja Física" : "Cuenta SINPE",
+        t.type === "caja" ? "💵 Caja Física" : "📱 Cuenta SINPE",
         fmt(t.balance),
       ]),
       margin: { left: 14, right: 14 },
-      styles: { fontSize: 10, cellPadding: 3 },
+      styles: { fontSize: 10, cellPadding: 4 },
       headStyles: {
         fillColor: [45, 122, 79],
         textColor: 255,
         fontStyle: "bold",
       },
       alternateRowStyles: { fillColor: [212, 237, 223] },
+      columnStyles: { 1: { fontStyle: "bold", halign: "right" } },
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // Movimientos de inventario
-    if ((data.movements || []).length > 0) {
-      doc.setFontSize(12);
+    // ── SECCIÓN 3: DETALLE DE VENTAS ─────────────────────────
+    if ((data.sales_detail || []).length > 0) {
+      checkSpace(20);
+      doc.setFillColor(245, 240, 232);
+      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("Movimientos de Inventario", 14, y);
-      y += 6;
+      doc.setTextColor(26, 95, 168);
+      doc.text(`DETALLE DE VENTAS (${data.sales_detail.length})`, 18, y + 5.5);
+      doc.setTextColor(26, 18, 8);
+      y += 13;
+
+      data.sales_detail.forEach((sale, idx) => {
+        checkSpace(30);
+
+        // Header de la venta
+        doc.setFillColor(219, 234, 254);
+        doc.roundedRect(14, y, W - 28, 8, 1, 1, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(26, 95, 168);
+        doc.text(`Venta #${String(idx + 1).padStart(3, "0")}`, 17, y + 5.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.text(`${sale.hora}`, 60, y + 5.5);
+        doc.text(
+          `${sale.payment_method === "efectivo" ? "💵 Efectivo" : "📱 SINPE"}`,
+          85,
+          y + 5.5,
+        );
+        if (sale.sinpe_description)
+          doc.text(`Ref: ${sale.sinpe_description}`, 115, y + 5.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(200, 87, 10);
+        doc.text(fmt(sale.total), W - 14, y + 5.5, { align: "right" });
+        y += 10;
+
+        // Productos de la venta
+        const items = (sale.items || []).filter(Boolean);
+        doc.autoTable({
+          startY: y,
+          body: items.map((item) => [
+            item.product_name,
+            item.quantity.toString(),
+            fmt(item.unit_price),
+            fmt(item.subtotal),
+          ]),
+          margin: { left: 20, right: 14 },
+          styles: { fontSize: 8.5, cellPadding: 2.5 },
+          columnStyles: {
+            0: { cellWidth: "auto" },
+            1: { halign: "center", cellWidth: 20 },
+            2: { halign: "right", cellWidth: 30 },
+            3: { halign: "right", cellWidth: 30, fontStyle: "bold" },
+          },
+          alternateRowStyles: { fillColor: [248, 245, 240] },
+          theme: "plain",
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      });
+
+      y += 4;
+    }
+
+    // ── SECCIÓN 4: MOVIMIENTOS DE INVENTARIO ──────────────────
+    if ((data.movements || []).length > 0) {
+      checkSpace(20);
+      doc.setFillColor(245, 240, 232);
+      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 50, 150);
+      doc.text(
+        `MOVIMIENTOS DE INVENTARIO (${data.movements.length})`,
+        18,
+        y + 5.5,
+      );
+      doc.setTextColor(26, 18, 8);
+      y += 11;
 
       doc.autoTable({
         startY: y,
-        head: [["Producto", "SKU", "Tipo", "Cantidad", "Motivo", "Usuario"]],
+        head: [["Producto", "SKU", "Tipo", "Cantidad", "Motivo"]],
         body: data.movements.map((m) => [
           m.product_name,
           m.sku,
           MOVEMENT_LABELS[m.type] || m.type,
           m.type === "entrada" ? `+${m.quantity}` : `-${m.quantity}`,
           m.reason || "—",
-          m.user_name || "—",
         ]),
         margin: { left: 14, right: 14 },
-        styles: { fontSize: 9, cellPadding: 2 },
+        styles: { fontSize: 9, cellPadding: 2.5 },
         headStyles: {
-          fillColor: [26, 95, 168],
+          fillColor: [100, 50, 150],
           textColor: 255,
           fontStyle: "bold",
         },
-        alternateRowStyles: { fillColor: [219, 234, 254] },
-        columnStyles: { 3: { halign: "center" } },
+        alternateRowStyles: { fillColor: [240, 230, 255] },
+        columnStyles: { 3: { halign: "center", fontStyle: "bold" } },
       });
       y = doc.lastAutoTable.finalY + 10;
     }
 
-    // Productos con bajo stock
+    // ── SECCIÓN 5: BAJO STOCK ─────────────────────────────────
     if ((data.low_stock || []).length > 0) {
-      if (y > 220) {
-        doc.addPage();
-        y = 18;
-      }
-      doc.setFontSize(12);
+      checkSpace(20);
+      doc.setFillColor(253, 232, 230);
+      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(192, 57, 43);
       doc.text(
-        `Alerta: ${data.low_stock.length} Productos con Bajo Stock`,
-        14,
-        y,
+        `⚠ ALERTA: ${data.low_stock.length} PRODUCTOS CON BAJO STOCK`,
+        18,
+        y + 5.5,
       );
       doc.setTextColor(26, 18, 8);
-      y += 6;
+      y += 11;
 
       doc.autoTable({
         startY: y,
-        head: [
-          ["Producto", "SKU", "Categoría", "Stock Actual", "Stock Mínimo"],
-        ],
+        head: [["Producto", "SKU", "Categoría", "Stock Actual", "Mínimo"]],
         body: data.low_stock.map((p) => [
           p.name,
           p.sku,
@@ -199,7 +321,7 @@ export default function DailyClosure() {
           p.min_stock.toString(),
         ]),
         margin: { left: 14, right: 14 },
-        styles: { fontSize: 9, cellPadding: 2 },
+        styles: { fontSize: 9, cellPadding: 2.5 },
         headStyles: {
           fillColor: [192, 57, 43],
           textColor: 255,
@@ -213,15 +335,16 @@ export default function DailyClosure() {
       });
     }
 
-    // Footer en todas las páginas
+    // ── FOOTER ───────────────────────────────────────────────
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
+      doc.setFillColor(45, 21, 7);
+      doc.rect(0, 285, W, 12, "F");
       doc.setFontSize(8);
-      doc.setTextColor(168, 147, 122);
-      doc.text(`Pulperia JTN · Página ${i} de ${totalPages}`, W / 2, 290, {
-        align: "center",
-      });
+      doc.setTextColor(200, 200, 200);
+      doc.text(`Pulpería JTN · Cierre de Caja ${fmtDate(data.date)}`, 14, 292);
+      doc.text(`Página ${i} de ${totalPages}`, W - 14, 292, { align: "right" });
     }
 
     return doc;
@@ -234,7 +357,7 @@ export default function DailyClosure() {
     toast.success("PDF descargado");
   };
 
-  const sendEmail = async () => {
+  const sendEmailFn = async () => {
     if (!email.trim()) return toast.error("Ingresa un email destinatario");
     const doc = generatePDF();
     if (!doc) return;
@@ -248,43 +371,30 @@ export default function DailyClosure() {
         filename: `cierre-caja-${data.date}.pdf`,
         html: `
           <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
-            <div style="background:#c8570a;color:white;padding:24px;border-radius:12px 12px 0 0">
-              <h2 style="margin:0;font-size:22px">🏪 Pulperia JTN</h2>
-              <p style="margin:6px 0 0;opacity:0.85;font-size:14px">Cierre de Caja — ${fmtDate(data.date)}</p>
+            <div style="background:#2d1507;color:white;padding:24px;border-radius:12px 12px 0 0;border-bottom:4px solid #c8570a">
+              <h2 style="margin:0;font-size:22px">🏪 Pulpería JTN</h2>
+              <p style="margin:6px 0 0;opacity:0.8;font-size:14px">Cierre de Caja — ${fmtDate(data.date)}</p>
             </div>
             <div style="background:#faf7f2;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e8dfd0">
-              <p style="color:#1a1208;font-size:14px">Hola,</p>
               <p style="color:#1a1208;font-size:14px">Adjunto el informe de cierre de caja del día <strong>${fmtDate(data.date)}</strong>.</p>
-
-              <table style="width:100%;border-collapse:collapse;margin:18px 0;border-radius:8px;overflow:hidden">
-                <tr>
-                  <td style="padding:10px 14px;background:#f5f0e8;font-weight:600;font-size:13px;color:#6b5c42">Total Ventas</td>
-                  <td style="padding:10px 14px;background:#f5f0e8;font-weight:800;font-size:16px;color:#c8570a;text-align:right">${fmt(data.total_sales)}</td>
-                </tr>
-                <tr>
-                  <td style="padding:10px 14px;font-size:13px;color:#6b5c42">Transacciones</td>
-                  <td style="padding:10px 14px;font-weight:600;text-align:right">${data.total_count}</td>
-                </tr>
+              <table style="width:100%;border-collapse:collapse;margin:16px 0">
+                <tr><td style="padding:10px 14px;background:#f5f0e8;font-weight:600;font-size:13px;color:#6b5c42">Total Ventas</td>
+                    <td style="padding:10px 14px;background:#f5f0e8;font-weight:800;font-size:16px;color:#c8570a;text-align:right">${fmt(data.total_sales)}</td></tr>
+                <tr><td style="padding:10px 14px;font-size:13px;color:#6b5c42">Transacciones</td>
+                    <td style="padding:10px 14px;font-weight:600;text-align:right">${data.total_count}</td></tr>
                 ${(data.treasury || [])
                   .map(
                     (t) => `
-                <tr>
-                  <td style="padding:10px 14px;background:#f5f0e8;font-size:13px;color:#6b5c42">${t.type === "caja" ? "💵 Saldo Caja" : "📱 Saldo SINPE"}</td>
-                  <td style="padding:10px 14px;background:#f5f0e8;font-weight:700;text-align:right">${fmt(t.balance)}</td>
-                </tr>`,
+                <tr><td style="padding:10px 14px;background:#f5f0e8;font-size:13px;color:#6b5c42">${t.type === "caja" ? "💵 Saldo Caja" : "📱 Saldo SINPE"}</td>
+                    <td style="padding:10px 14px;background:#f5f0e8;font-weight:700;text-align:right">${fmt(t.balance)}</td></tr>`,
                   )
                   .join("")}
-                <tr>
-                  <td style="padding:10px 14px;font-size:13px;color:#6b5c42">Alertas de Stock</td>
-                  <td style="padding:10px 14px;font-weight:600;text-align:right;color:${data.low_stock?.length > 0 ? "#c0392b" : "#2d7a4f"}">
-                    ${data.low_stock?.length > 0 ? `⚠️ ${data.low_stock.length} productos` : "✅ Todo OK"}
-                  </td>
-                </tr>
+                <tr><td style="padding:10px 14px;font-size:13px;color:#6b5c42">Alertas de Stock</td>
+                    <td style="padding:10px 14px;font-weight:600;text-align:right;color:${data.low_stock?.length > 0 ? "#c0392b" : "#2d7a4f"}">
+                      ${data.low_stock?.length > 0 ? `⚠️ ${data.low_stock.length} productos` : "✅ Todo OK"}</td></tr>
               </table>
-
               <p style="color:#a8937a;font-size:12px;margin-top:20px;border-top:1px solid #e8dfd0;padding-top:12px">
-                Generado por: <strong>${data.generated_by}</strong> · ${fmtDateTime(data.generated_at)}<br/>
-                Pulperia JTN — Sistema de Gestión de Inventario
+                Generado por: <strong>${data.generated_by}</strong> · ${fmtDateTime(data.generated_at)}
               </p>
             </div>
           </div>`,
@@ -309,7 +419,6 @@ export default function DailyClosure() {
         title="📋 Cierre de Caja Diario"
         maxWidth={680}
       >
-        {/* Selector de fecha */}
         <div
           style={{
             display: "flex",
@@ -343,13 +452,13 @@ export default function DailyClosure() {
               color: "var(--text3)",
             }}
           >
-            Cargando datos del día…
+            Cargando datos…
           </div>
         )}
 
         {data && !loading && (
           <>
-            {/* Cards resumen */}
+            {/* Resumen cards */}
             <div
               style={{
                 display: "grid",
@@ -445,73 +554,83 @@ export default function DailyClosure() {
               </div>
             )}
 
-            {/* Preview movimientos */}
-            {data.movements?.length > 0 && (
+            {/* Preview ventas */}
+            {data.sales_detail?.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                  Movimientos del día ({data.movements.length})
+                  Ventas del día ({data.sales_detail.length})
                 </div>
                 <div
                   style={{
-                    maxHeight: 140,
+                    maxHeight: 180,
                     overflowY: "auto",
                     border: "1px solid var(--border)",
                     borderRadius: 8,
                   }}
                 >
-                  {data.movements.slice(0, 10).map((m, i) => (
+                  {data.sales_detail.map((sale, i) => (
                     <div
-                      key={m.id}
+                      key={sale.id}
                       style={{
-                        display: "flex",
-                        gap: 10,
                         padding: "8px 12px",
                         borderBottom: "1px solid var(--border)",
-                        fontSize: 12.5,
                         background: i % 2 === 0 ? "white" : "var(--surface2)",
                       }}
                     >
-                      <span
+                      <div
                         style={{
-                          fontWeight: 600,
-                          minWidth: 130,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                         }}
                       >
-                        {m.product_name}
-                      </span>
-                      <span
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={{ fontSize: 12, color: "var(--text3)" }}>
+                            #{String(i + 1).padStart(3, "0")}
+                          </span>
+                          <span style={{ fontSize: 12, color: "var(--text3)" }}>
+                            {sale.hora}
+                          </span>
+                          <span
+                            className={`badge ${sale.payment_method === "efectivo" ? "badge-green" : "badge-blue"}`}
+                            style={{ fontSize: 10 }}
+                          >
+                            {sale.payment_method === "efectivo" ? "💵" : "📱"}{" "}
+                            {sale.payment_method}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color: "var(--accent)",
+                          }}
+                        >
+                          {fmt(sale.total)}
+                        </span>
+                      </div>
+                      <div
                         style={{
-                          color:
-                            m.type === "entrada"
-                              ? "var(--green)"
-                              : "var(--red)",
-                          fontWeight: 700,
-                          minWidth: 40,
+                          fontSize: 11.5,
+                          color: "var(--text3)",
+                          marginTop: 3,
                         }}
                       >
-                        {m.type === "entrada" ? "+" : "-"}
-                        {m.quantity}
-                      </span>
-                      <span style={{ color: "var(--text3)", flex: 1 }}>
-                        {m.reason || "—"}
-                      </span>
+                        {(sale.items || [])
+                          .filter(Boolean)
+                          .map(
+                            (item) => `${item.product_name} ×${item.quantity}`,
+                          )
+                          .join(" · ")}
+                      </div>
                     </div>
                   ))}
-                  {data.movements.length > 10 && (
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        fontSize: 12,
-                        color: "var(--text3)",
-                        textAlign: "center",
-                      }}
-                    >
-                      +{data.movements.length - 10} más en el PDF completo
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -533,7 +652,6 @@ export default function DailyClosure() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="destinatario@gmail.com"
                   style={{
                     flex: 1,
                     padding: "9px 13px",
@@ -547,7 +665,7 @@ export default function DailyClosure() {
                 />
                 <button
                   className="btn btn-blue"
-                  onClick={sendEmail}
+                  onClick={sendEmailFn}
                   disabled={sending}
                 >
                   {sending ? "Enviando…" : "📤 Enviar"}
