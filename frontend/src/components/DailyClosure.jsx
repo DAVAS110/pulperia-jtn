@@ -22,11 +22,21 @@ export default function DailyClosure() {
   const [sending, setSending] = useState(false);
 
   const load = async (d) => {
+    const targetDate = d || date;
     setLoading(true);
     try {
-      const { data: res } = await reportsAPI.daily({ date: d || date });
+      const { data: res } = await reportsAPI.daily({ date: targetDate });
+      // Diagnostic — check browser console if ventas faltan
+      console.log("[DailyClosure] Fecha consultada:", targetDate);
+      console.log(
+        "[DailyClosure] sales_detail recibidas:",
+        res?.sales_detail?.length,
+        res?.sales_detail,
+      );
+      console.log("[DailyClosure] total_count:", res?.total_count);
       setData(res);
-    } catch {
+    } catch (err) {
+      console.error("[DailyClosure] Error:", err);
       toast.error("Error al cargar datos del dia");
     } finally {
       setLoading(false);
@@ -36,7 +46,7 @@ export default function DailyClosure() {
   const openModal = async () => {
     setOpen(true);
     setData(null);
-    await load();
+    await load(date); // pass date explicitly to avoid stale closure
   };
 
   const generatePDF = () => {
@@ -588,7 +598,7 @@ export default function DailyClosure() {
                 </div>
                 <div
                   style={{
-                    maxHeight: 180,
+                    maxHeight: 320,
                     overflowY: "auto",
                     border: "1px solid var(--border)",
                     borderRadius: 8,
