@@ -11,7 +11,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-//Dev
+// Dev
 // const pool = new Pool({
 //   connectionString: process.env.DATABASE_URL,
 //   ssl: false, // ✅ cambiar esto
