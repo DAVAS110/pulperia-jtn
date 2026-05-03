@@ -3,6 +3,7 @@ import { productsAPI, salesAPI } from "../services/api";
 import { Modal } from "../components/ui";
 import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
+import { compressImage, formatBytes, base64Size } from "../utils/imageUtils";
 
 export default function Caja() {
   const [products, setProducts] = useState([]);
@@ -100,19 +101,27 @@ export default function Caja() {
       ? parseFloat(cashReceived) - total
       : 0;
 
-  const handlePhotoFile = (e) => {
+  const handlePhotoFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("La imagen no puede superar 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("La imagen no puede superar 10MB");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setSinpePhoto(ev.target.result);
-      setPhotoPreview(ev.target.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast.info && toast.info("Comprimiendo imagen...");
+      const compressed = await compressImage(file, {
+        maxWidth: 1000,
+        quality: 0.7,
+      });
+      const originalSize = formatBytes(file.size);
+      const compressedSize = formatBytes(base64Size(compressed));
+      setSinpePhoto(compressed);
+      setPhotoPreview(compressed);
+      toast.success(`Imagen lista (${originalSize} → ${compressedSize})`);
+    } catch {
+      toast.error("Error al procesar la imagen");
+    }
     e.target.value = "";
   };
 
