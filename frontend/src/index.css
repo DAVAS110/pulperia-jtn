@@ -1095,3 +1095,153 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── CAJA / POS MOBILE ──────────────────────────────────── */
+@media (max-width: 768px) {
+  /* En móvil la caja va en columna: productos arriba, carrito abajo */
+  .pos-layout {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  /* El carrito en móvil es compacto y fijo abajo */
+  .cart-panel {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -4px 24px rgba(26, 18, 8, 0.18) !important;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Cuando el carrito está vacío lo colapsamos */
+  .cart-panel.empty {
+    max-height: 72px;
+    overflow: hidden;
+  }
+
+  /* Espacio para que el contenido no quede debajo del carrito fijo */
+  .pos-products-wrapper {
+    padding-bottom: 80px;
+  }
+
+  /* Grid de productos más compacto en móvil */
+  .pos-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Page container con menos padding en móvil */
+  .page-container {
+    padding: 14px 12px !important;
+  }
+}
+
+/* ─── DASHBOARD MOBILE ───────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Stats en 2 columnas en móvil */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stat-card {
+    padding: 14px !important;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stat-value {
+    font-size: 20px !important;
+  }
+
+  /* Dashboard grid en columna */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ocultar segunda columna del dashboard en móvil */
+  .dashboard-secondary {
+    display: none;
+  }
+}
+
+/* ─── PRODUCTOS MOBILE ───────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Filters en columna */
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .filters-bar .search-input {
+    min-width: unset !important;
+  }
+
+  /* Tabla de productos: ocultar columnas menos importantes */
+  table th:nth-child(2), table td:nth-child(2), /* Categoría */
+  table th:nth-child(4), table td:nth-child(4)  /* Costo */ {
+    display: none;
+  }
+
+  /* Page header en móvil */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ─── TOPBAR MOBILE ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 10px 14px !important;
+  }
+
+  /* Ocultar texto largo en topbar */
+  .topbar .badge {
+    font-size: 10px !important;
+  }
+}
+
+/* ─── MODALES MOBILE ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  .modal {
+    max-height: 95vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin: 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── VENTAS MOBILE ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Ocultar columnas no esenciales en ventas */
+  table th:nth-child(6), table td:nth-child(6), /* Usuario */
+  table th:nth-child(3), table td:nth-child(3)  /* Artículos */ {
+    display: none;
+  }
+}
