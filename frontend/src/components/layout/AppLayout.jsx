@@ -26,7 +26,7 @@ const NAV = [
     label: "Análisis",
     items: [
       { to: "/reportes", icon: "📈", label: "Reportes" },
-      { to: "/qr", icon: "📷", label: "Códigos QR" },
+      // { to: "/qr", icon: "📷", label: "Códigos QR" },
     ],
   },
   {
