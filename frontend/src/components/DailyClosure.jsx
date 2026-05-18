@@ -263,8 +263,27 @@ export default function DailyClosure() {
 
         const safeHora = safeDateStr(sale.hora || "");
         const safeSaleDate = sale.fecha
-          ? safeDateStr(fmtDate(sale.fecha)) + " "
+          ? (() => {
+              const [yy, mm, dd] = sale.fecha.split("-");
+              const meses = [
+                "",
+                "ene",
+                "feb",
+                "mar",
+                "abr",
+                "may",
+                "jun",
+                "jul",
+                "ago",
+                "sep",
+                "oct",
+                "nov",
+                "dic",
+              ];
+              return `${parseInt(dd)} ${meses[parseInt(mm)]} `;
+            })()
           : "";
+
         const payLabel =
           sale.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE";
         const safeRef = sale.sinpe_description
