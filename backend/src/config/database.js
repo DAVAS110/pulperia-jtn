@@ -20,9 +20,9 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-pool.on("error", (err) => {
-  console.error("Unexpected error on idle client", err);
-  process.exit(-1);
-});
+// pool.on("error", (err) => {
+//   console.error("Unexpected error on idle client", err);
+//   process.exit(-1);
+// });
 
 module.exports = { pool };

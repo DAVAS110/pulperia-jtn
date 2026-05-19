@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { productsAPI, salesAPI } from "../services/api";
 import { Modal } from "../components/ui";
 import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
+import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
 import { compressImage, formatBytes, base64Size } from "../utils/imageUtils";
 
 export default function Caja() {
@@ -25,13 +26,19 @@ export default function Caja() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  useEffect(() => {
-    productsAPI
-      .list({ limit: 500 })
-      .then(({ data }) =>
-        setProducts(data.products.filter((p) => p.stock > 0)),
-      );
+  const loadProducts = useCallback(async () => {
+    try {
+      const { data } = await productsAPI.list({ limit: 500 });
+      setProducts(data.products.filter((p) => p.stock > 0));
+    } catch {}
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // Refresca el stock al volver a la pestaña
+  useVisibilityRefresh(loadProducts);
 
   useEffect(() => {
     if (!search.trim()) {
