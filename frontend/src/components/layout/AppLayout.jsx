@@ -26,7 +26,8 @@ const NAV = [
     label: "Análisis",
     items: [
       { to: "/reportes", icon: "📈", label: "Reportes" },
-      // { to: "/qr", icon: "📷", label: "Códigos QR" },
+      { to: "/combos", icon: "🎁", label: "Combos" },
+      { to: "/qr", icon: "📷", label: "Códigos QR" },
     ],
   },
   {
@@ -80,7 +81,7 @@ export default function AppLayout({ children }) {
         <div className="sidebar-logo">
           <div className="logo-icon">🏪</div>
           <div>
-            <h2>Pulperia JTN</h2>
+            <h2>Pulpería JTN</h2>
             <span>Inventario & Ventas</span>
           </div>
         </div>

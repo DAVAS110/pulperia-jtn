@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { productsAPI, salesAPI } from "../services/api";
+import { productsAPI, salesAPI, combosAPI } from "../services/api";
 import { Modal } from "../components/ui";
 import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
@@ -8,6 +8,7 @@ import { compressImage, formatBytes, base64Size } from "../utils/imageUtils";
 
 export default function Caja() {
   const [products, setProducts] = useState([]);
+  const [combos, setCombos] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
   const [cart, setCart] = useState([]);
@@ -23,8 +24,16 @@ export default function Caja() {
   const [receiptModal, setReceiptModal] = useState(false);
   const [viewPhotoModal, setViewPhotoModal] = useState(null);
   const [skuInput, setSkuInput] = useState("");
+  const [activeTab, setActiveTab] = useState("productos"); // 'productos' | 'combos'
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  const loadCombos = useCallback(async () => {
+    try {
+      const { data } = await combosAPI.list();
+      setCombos(data.combos || []);
+    } catch {}
+  }, []);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -35,10 +44,14 @@ export default function Caja() {
 
   useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+    loadCombos();
+  }, [loadProducts, loadCombos]);
 
   // Refresca el stock al volver a la pestaña
-  useVisibilityRefresh(loadProducts);
+  useVisibilityRefresh(() => {
+    loadProducts();
+    loadCombos();
+  });
 
   useEffect(() => {
     if (!search.trim()) {
@@ -55,6 +68,45 @@ export default function Caja() {
         .slice(0, 8),
     );
   }, [search, products]);
+
+  const addComboToCart = (combo) => {
+    // Check all products in combo have enough stock
+    for (const item of combo.items || []) {
+      const inCart = cart.find((c) => c.product_id === item.product_id);
+      const currentQty = inCart ? inCart.quantity : 0;
+      if (item.product_stock < currentQty + item.quantity) {
+        toast.error(`Stock insuficiente de "${item.product_name}"`);
+        return;
+      }
+    }
+    // Add combo as single cart item
+    setCart((prev) => {
+      const existing = prev.find((i) => i.combo_id === combo.id);
+      if (existing) {
+        return prev.map((i) =>
+          i.combo_id === combo.id ? { ...i, quantity: i.quantity + 1 } : i,
+        );
+      }
+      return [
+        ...prev,
+        {
+          combo_id: combo.id,
+          product_id: null,
+          name: `🎁 ${combo.name}`,
+          sku: "COMBO",
+          price: parseFloat(combo.price),
+          quantity: 1,
+          maxStock: Math.min(
+            ...(combo.items || []).map((i) =>
+              Math.floor(i.product_stock / i.quantity),
+            ),
+          ),
+          isCombo: true,
+          comboItems: combo.items,
+        },
+      ];
+    });
+  };
 
   const addToCart = (product) => {
     setCart((prev) => {
@@ -173,10 +225,12 @@ export default function Caja() {
     setProcessing(true);
     try {
       const { data } = await salesAPI.create({
-        items: cart.map((i) => ({
-          product_id: i.product_id,
-          quantity: i.quantity,
-        })),
+        items: cart
+          .filter((i) => !i.isCombo)
+          .map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+        combos: cart
+          .filter((i) => i.isCombo)
+          .map((i) => ({ combo_id: i.combo_id, quantity: i.quantity })),
         payment_method: payMethod,
         cash_received:
           payMethod === "efectivo" && cashReceived
@@ -295,7 +349,110 @@ export default function Caja() {
               ))}
             </div>
           )}
+          {/* Tabs productos / combos */}
           {!search && (
+            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+              <button
+                onClick={() => setActiveTab("productos")}
+                className={`btn btn-sm ${activeTab === "productos" ? "btn-accent" : "btn-ghost"}`}
+              >
+                📦 Productos
+              </button>
+              <button
+                onClick={() => setActiveTab("combos")}
+                className={`btn btn-sm ${activeTab === "combos" ? "btn-accent" : "btn-ghost"}`}
+              >
+                🎁 Combos ({combos.length})
+              </button>
+            </div>
+          )}
+
+          {/* Combos grid */}
+          {!search && activeTab === "combos" && (
+            <div
+              className="pos-products-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(150px,1fr))",
+                gap: 10,
+              }}
+            >
+              {combos.length === 0 ? (
+                <div
+                  style={{
+                    gridColumn: "1/-1",
+                    textAlign: "center",
+                    padding: "40px 20px",
+                    color: "var(--text3)",
+                  }}
+                >
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
+                  <p style={{ fontSize: 13 }}>No hay combos activos</p>
+                </div>
+              ) : (
+                combos.map((c) => (
+                  <div
+                    key={c.id}
+                    className="card"
+                    onClick={() => addComboToCart(c)}
+                    style={{
+                      padding: 14,
+                      cursor: "pointer",
+                      textAlign: "center",
+                      transition: "all 0.2s",
+                      userSelect: "none",
+                      border: "2px solid var(--accent-light)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "var(--shadow-lg)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "";
+                      e.currentTarget.style.boxShadow = "";
+                    }}
+                  >
+                    <div style={{ fontSize: 26, marginBottom: 6 }}>🎁</div>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 12,
+                        marginBottom: 4,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {c.name}
+                    </div>
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        color: "var(--accent)",
+                        fontSize: 14,
+                      }}
+                    >
+                      {fmt(c.price)}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "var(--text3)",
+                        marginTop: 3,
+                      }}
+                    >
+                      {(c.items || [])
+                        .slice(0, 2)
+                        .map((i) => i.product_name)
+                        .join(" + ")}
+                      {(c.items || []).length > 2 ? "…" : ""}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Products grid */}
+          {!search && activeTab === "productos" && (
             <div
               className="pos-products-grid"
               style={{

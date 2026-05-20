@@ -61,6 +61,7 @@ const create = async (req, res) => {
     await client.query("BEGIN");
     const {
       items,
+      combos: comboItems,
       payment_method,
       cash_received,
       sinpe_description,
@@ -69,10 +70,10 @@ const create = async (req, res) => {
       notes,
     } = req.body;
 
-    if (!items || !items.length)
+    if ((!items || !items.length) && (!comboItems || !comboItems.length))
       return res
         .status(400)
-        .json({ error: "Se requiere al menos un producto" });
+        .json({ error: "Se requiere al menos un producto o combo" });
     if (!payment_method)
       return res.status(400).json({ error: "Método de pago requerido" });
     if (payment_method === "sinpe" && !received_by?.trim())
@@ -104,6 +105,43 @@ const create = async (req, res) => {
         quantity: parseInt(item.quantity),
         subtotal: itemSubtotal,
       });
+    }
+
+    // Process combos
+    const comboEnrichedItems = [];
+    if (comboItems && comboItems.length) {
+      for (const ci of comboItems) {
+        const comboRes = await client.query(
+          `
+          SELECT c.*, json_agg(json_build_object(
+            'product_id', p.id, 'product_name', p.name, 'product_sku', p.sku,
+            'quantity', ci2.quantity, 'stock', p.stock
+          )) AS products
+          FROM combos c
+          JOIN combo_items ci2 ON ci2.combo_id = c.id
+          JOIN products p ON p.id = ci2.product_id
+          WHERE c.id = $1 AND c.is_active = true
+          GROUP BY c.id
+        `,
+          [ci.combo_id],
+        );
+
+        const combo = comboRes.rows[0];
+        if (!combo) throw new Error(`Combo no encontrado`);
+
+        const qty = parseInt(ci.quantity) || 1;
+        // Check stock for each product in combo
+        for (const prod of combo.products) {
+          const needed = prod.quantity * qty;
+          if (prod.stock < needed)
+            throw new Error(
+              `Stock insuficiente de "${prod.product_name}" para el combo "${combo.name}". Disponible: ${prod.stock}`,
+            );
+        }
+
+        subtotal += parseFloat(combo.price) * qty;
+        comboEnrichedItems.push({ combo, quantity: qty });
+      }
     }
 
     const total = subtotal;
@@ -161,6 +199,44 @@ const create = async (req, res) => {
          VALUES ($1,$2,'venta',$3,'Venta registrada',$4)`,
         [item.product.id, req.user.id, item.quantity, sale.id],
       );
+    }
+
+    // Process combo stock deductions
+    for (const ci of comboEnrichedItems) {
+      const { combo, quantity } = ci;
+      // Add combo as sale item
+      await client.query(
+        `INSERT INTO sale_items (sale_id, product_id, product_name, product_sku, quantity, unit_price, subtotal)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          sale.id,
+          combo.products[0].product_id,
+          `Combo: ${combo.name}`,
+          `COMBO`,
+          quantity,
+          combo.price,
+          parseFloat(combo.price) * quantity,
+        ],
+      );
+      // Deduct stock from each product in combo
+      for (const prod of combo.products) {
+        const needed = prod.quantity * quantity;
+        await client.query(
+          "UPDATE products SET stock = stock - $1 WHERE id = $2",
+          [needed, prod.product_id],
+        );
+        await client.query(
+          `INSERT INTO inventory_movements (product_id, user_id, type, quantity, reason, reference_id)
+           VALUES ($1,$2,'venta',$3,$4,$5)`,
+          [
+            prod.product_id,
+            req.user.id,
+            needed,
+            `Venta combo: ${combo.name}`,
+            sale.id,
+          ],
+        );
+      }
     }
 
     // Auto-update treasury

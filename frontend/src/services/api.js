@@ -67,6 +67,14 @@ export const reportsAPI = {
   sendEmail: (data) => api.post("/reports/send-email", data),
 };
 
+export const combosAPI = {
+  list: () => api.get("/combos"),
+  listAll: () => api.get("/combos/all"),
+  create: (data) => api.post("/combos", data),
+  update: (id, data) => api.put(`/combos/${id}`, data),
+  delete: (id) => api.delete(`/combos/${id}`),
+};
+
 export const treasuryAPI = {
   getSummary: () => api.get("/treasury"),
   listMovements: (params) => api.get("/treasury/movements", { params }),

@@ -16,6 +16,7 @@ import Ventas from "./pages/Ventas";
 import QRPage from "./pages/QRPage";
 import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
+import Combos from "./pages/Combos";
 import { useKeepAlive } from "./hooks/useKeepAlive";
 
 function PrivateRoute({ children }) {
@@ -56,6 +57,7 @@ function App() {
                     <Route path="/qr" element={<QRPage />} />
                     <Route path="/reportes" element={<Reportes />} />
                     <Route path="/configuracion" element={<Configuracion />} />
+                    <Route path="/combos" element={<Combos />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </AppLayout>

@@ -8,6 +8,7 @@ const sales = require("../controllers/sales.controller");
 const reports = require("../controllers/reports.controller");
 const treasury = require("../controllers/treasury.controller");
 const daily = require("../controllers/dailyReport.controller");
+const combos = require("../controllers/combos.controller");
 
 // AUTH
 router.post("/auth/login", auth.login);
@@ -30,6 +31,13 @@ router.get("/products/:id", authenticate, products.getOne);
 router.post("/products", authenticate, products.create);
 router.put("/products/:id", authenticate, products.update);
 router.delete("/products/:id", authenticate, requireAdmin, products.remove);
+
+// COMBOS
+router.get("/combos", authenticate, combos.list);
+router.get("/combos/all", authenticate, requireAdmin, combos.listAll);
+router.post("/combos", authenticate, requireAdmin, combos.create);
+router.put("/combos/:id", authenticate, requireAdmin, combos.update);
+router.delete("/combos/:id", authenticate, requireAdmin, combos.remove);
 
 // INVENTORY
 router.get("/inventory", authenticate, inventory.list);
