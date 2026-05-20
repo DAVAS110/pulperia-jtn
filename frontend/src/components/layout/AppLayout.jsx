@@ -20,15 +20,12 @@ const NAV = [
       { to: "/ventas", icon: "💳", label: "Ventas" },
       { to: "/movimientos", icon: "🔄", label: "Movimientos" },
       { to: "/alertas", icon: "⚠️", label: "Alertas", badge: true },
+      { to: "/combos", icon: "🎁", label: "Combos" },
     ],
   },
   {
     label: "Análisis",
-    items: [
-      { to: "/reportes", icon: "📈", label: "Reportes" },
-      { to: "/combos", icon: "🎁", label: "Combos" },
-      { to: "/qr", icon: "📷", label: "Códigos QR" },
-    ],
+    items: [{ to: "/reportes", icon: "📈", label: "Reportes" }],
   },
   {
     label: "Sistema",
