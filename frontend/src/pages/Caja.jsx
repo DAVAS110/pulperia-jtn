@@ -412,7 +412,45 @@ export default function Caja() {
                       e.currentTarget.style.boxShadow = "";
                     }}
                   >
-                    <div style={{ fontSize: 26, marginBottom: 6 }}>🎁</div>
+                    {/* Important */}
+                    {c.image_url ? (
+                      <div
+                        style={{
+                          width: 52,
+                          height: 52,
+                          margin: "0 auto 10px",
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          background: "var(--surface2)",
+                        }}
+                      >
+                        <img
+                          src={c.image_url}
+                          alt={c.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          width: 52,
+                          height: 52,
+                          margin: "0 auto 10px",
+                          borderRadius: 10,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "var(--surface2)",
+                          fontSize: 24,
+                        }}
+                      >
+                        🎁
+                      </div>
+                    )}
                     <div
                       style={{
                         fontWeight: 700,

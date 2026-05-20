@@ -148,17 +148,32 @@ const update = async (req, res) => {
   }
 };
 
-// DELETE /api/combos/:id (soft delete)
+// DELETE /api/combos/:id (hard delete)
 const remove = async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { rows } = await pool.query(
-      "UPDATE combos SET is_active = false WHERE id = $1 RETURNING id",
+    await client.query("BEGIN");
+    const deleteItems = await client.query(
+      "DELETE FROM combo_items WHERE combo_id = $1",
       [req.params.id],
     );
-    if (!rows[0]) return res.status(404).json({ error: "Combo no encontrado" });
+    const { rows } = await client.query(
+      "DELETE FROM combos WHERE id = $1 RETURNING id",
+      [req.params.id],
+    );
+
+    if (!rows[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Combo no encontrado" });
+    }
+
+    await client.query("COMMIT");
     res.json({ message: "Combo eliminado" });
   } catch (err) {
+    await client.query("ROLLBACK");
     res.status(500).json({ error: "Error al eliminar combo" });
+  } finally {
+    client.release();
   }
 };
 

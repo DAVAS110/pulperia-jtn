@@ -17,10 +17,10 @@ const NAV = [
     label: "Operaciones",
     items: [
       { to: "/caja", icon: "🛒", label: "Caja / POS" },
+      { to: "/combos", icon: "🎁", label: "Combos" },
+      { to: "/alertas", icon: "⚠️", label: "Alertas", badge: true },
       { to: "/ventas", icon: "💳", label: "Ventas" },
       { to: "/movimientos", icon: "🔄", label: "Movimientos" },
-      { to: "/alertas", icon: "⚠️", label: "Alertas", badge: true },
-      { to: "/combos", icon: "🎁", label: "Combos" },
     ],
   },
   {
