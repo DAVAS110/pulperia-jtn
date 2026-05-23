@@ -28,6 +28,21 @@ export default function Caja() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
+  const ProductImage = ({ src, alt, style }) => {
+    const [hasError, setHasError] = useState(false);
+    if (!src || hasError) {
+      return "📦";
+    }
+    return (
+      <img
+        src={src}
+        alt={alt}
+        style={style}
+        onError={() => setHasError(true)}
+      />
+    );
+  };
+
   const loadCombos = useCallback(async () => {
     try {
       const { data } = await combosAPI.list();
@@ -362,20 +377,16 @@ export default function Caja() {
                   }
                 >
                   <div className="prod-img">
-                    {p.image_url ? (
-                      <img
-                        src={p.image_url}
-                        alt={p.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          borderRadius: 8,
-                        }}
-                      />
-                    ) : (
-                      "📦"
-                    )}
+                    <ProductImage
+                      src={p.image_url}
+                      alt={p.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: 8,
+                      }}
+                    />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 13.5 }}>
@@ -541,19 +552,15 @@ export default function Caja() {
                       flexShrink: 0,
                     }}
                   >
-                    {p.image_url ? (
-                      <img
-                        src={p.image_url}
-                        alt={p.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      "📦"
-                    )}
+                    <ProductImage
+                      src={p.image_url}
+                      alt={p.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
                   </div>
                   <div
                     style={{
@@ -641,19 +648,15 @@ export default function Caja() {
                       flexShrink: 0,
                     }}
                   >
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      "📦"
-                    )}
+                    <ProductImage
+                      src={item.image_url}
+                      alt={item.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
