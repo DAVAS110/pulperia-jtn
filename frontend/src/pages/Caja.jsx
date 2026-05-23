@@ -70,19 +70,63 @@ export default function Caja() {
   }, [search, products]);
 
   const addComboToCart = (combo) => {
-    // Check all products in combo have enough stock
-    for (const item of combo.items || []) {
-      const inCart = cart.find((c) => c.product_id === item.product_id);
-      const currentQty = inCart ? inCart.quantity : 0;
-      if (item.product_stock < currentQty + item.quantity) {
-        toast.error(`Stock insuficiente de "${item.product_name}"`);
+    const items = combo.items || [];
+
+    if (items.length === 0) {
+      toast.error("Este combo no tiene productos configurados");
+      return;
+    }
+
+    // Calcular cuántas veces ya está este combo en el carrito
+    const comboInCart = cart.find((i) => i.combo_id === combo.id);
+    const comboQtyInCart = comboInCart ? comboInCart.quantity : 0;
+
+    // Verificar stock de cada producto considerando todo lo que hay en el carrito
+    for (const item of items) {
+      // Stock usado por productos individuales en carrito
+      const prodInCart = cart.find(
+        (i) => i.product_id === item.product_id && !i.isCombo,
+      );
+      const qtyIndividual = prodInCart ? prodInCart.quantity : 0;
+
+      // Stock usado por este combo ya en carrito
+      const qtyByCombo = comboQtyInCart * item.quantity;
+
+      // Stock total necesario si agrego 1 combo más
+      const totalNeeded = qtyIndividual + qtyByCombo + item.quantity;
+
+      if (item.product_stock < totalNeeded) {
+        toast.error(
+          `Stock insuficiente de "${item.product_name}". ` +
+            `Disponible: ${item.product_stock}, necesario: ${totalNeeded}`,
+        );
         return;
       }
     }
-    // Add combo as single cart item
+
+    // Calcular maxStock real del combo
+    const maxStock = Math.min(
+      ...items.map((i) => {
+        const prodInCart = cart.find(
+          (c) => c.product_id === i.product_id && !c.isCombo,
+        );
+        const usedIndividual = prodInCart ? prodInCart.quantity : 0;
+        return Math.floor((i.product_stock - usedIndividual) / i.quantity);
+      }),
+    );
+
+    if (maxStock <= 0) {
+      toast.error("No hay stock suficiente para este combo");
+      return;
+    }
+
     setCart((prev) => {
       const existing = prev.find((i) => i.combo_id === combo.id);
       if (existing) {
+        if (existing.quantity >= maxStock) {
+          toast.error(`Stock máximo para este combo: ${maxStock}`);
+          return prev;
+        }
         return prev.map((i) =>
           i.combo_id === combo.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
@@ -96,13 +140,9 @@ export default function Caja() {
           sku: "COMBO",
           price: parseFloat(combo.price),
           quantity: 1,
-          maxStock: Math.min(
-            ...(combo.items || []).map((i) =>
-              Math.floor(i.product_stock / i.quantity),
-            ),
-          ),
+          maxStock,
           isCombo: true,
-          comboItems: combo.items,
+          comboItems: items,
         },
       ];
     });
