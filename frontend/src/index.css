@@ -1126,7 +1126,7 @@ td {
 
   /* Espacio para que el contenido no quede debajo del carrito fijo */
   .pos-products-wrapper {
-    padding-bottom: 80px;
+    padding-bottom: 420px !important;
   }
 
   /* Grid de productos más compacto en móvil */
@@ -1138,6 +1138,66 @@ td {
   /* Page container con menos padding en móvil */
   .page-container {
     padding: 14px 12px !important;
+  }
+}
+
+/* ─── CAJA / POS MOBILE ──────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Page container sin padding bottom para la caja */
+  .page-container {
+    padding: 14px 12px 0 12px !important;
+  }
+
+  /* Layout de caja: ocupa toda la altura disponible */
+  .pos-layout {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    height: calc(100vh - 60px);
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  /* Productos: área scrolleable que ocupa el espacio disponible */
+  .pos-products-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Grid de productos más compacto */
+  .pos-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Carrito: altura fija al fondo, NO fixed position */
+  .cart-panel {
+    flex-shrink: 0;
+    height: auto;
+    max-height: 45vh;
+    border-radius: 16px 16px 0 0 !important;
+    box-shadow: 0 -4px 20px rgba(26, 18, 8, 0.15) !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Items del carrito con scroll */
+  .cart-items {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 28vh;
+  }
+
+  /* Carrito vacío más compacto */
+  .cart-panel.empty {
+    max-height: 120px;
+  }
+
+  .cart-panel.empty .cart-items {
+    display: none;
   }
 }
 
