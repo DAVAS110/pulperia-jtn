@@ -9,6 +9,7 @@ const reports = require("../controllers/reports.controller");
 const treasury = require("../controllers/treasury.controller");
 const daily = require("../controllers/dailyReport.controller");
 const combos = require("../controllers/combos.controller");
+const image = require("../controllers/image.controller");
 
 // AUTH
 router.post("/auth/login", auth.login);

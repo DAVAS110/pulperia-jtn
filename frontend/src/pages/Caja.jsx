@@ -27,15 +27,30 @@ export default function Caja() {
   const [activeTab, setActiveTab] = useState("productos"); // 'productos' | 'combos'
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const BACKEND_ORIGIN =
+    import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+
+  const getImageSrc = (src) => {
+    if (!src) return null;
+    if (src.startsWith("data:") || src.startsWith("blob:")) return src;
+    if (
+      BACKEND_ORIGIN &&
+      (src.startsWith("http://") || src.startsWith("https://"))
+    ) {
+      return `${BACKEND_ORIGIN}/api/image-proxy?url=${encodeURIComponent(src)}`;
+    }
+    return src;
+  };
 
   const ProductImage = ({ src, alt, style }) => {
     const [hasError, setHasError] = useState(false);
-    if (!src || hasError) {
+    const imageSrc = getImageSrc(src);
+    if (!imageSrc || hasError) {
       return "📦";
     }
     return (
       <img
-        src={src}
+        src={imageSrc}
         alt={alt}
         style={style}
         onError={() => setHasError(true)}
