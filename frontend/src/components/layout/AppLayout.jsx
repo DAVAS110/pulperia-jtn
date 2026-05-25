@@ -3,33 +3,55 @@ import { NavLink, useLocation } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
 import { reportsAPI } from "../../services/api";
 import DailyClosure from "../DailyClosure";
+import {
+  FiBarChart2,
+  FiBox,
+  FiTag,
+  FiShoppingCart,
+  FiGift,
+  FiAlertTriangle,
+  FiCreditCard,
+  FiRepeat,
+  FiTrendingUp,
+  FiSettings,
+  FiHome,
+  FiMenu,
+  FiLogOut,
+} from "react-icons/fi";
 
 const NAV = [
   {
     label: "Principal",
     items: [
-      { to: "/", icon: "📊", label: "Dashboard" },
-      { to: "/productos", icon: "📦", label: "Productos" },
-      { to: "/categorias", icon: "🏷️", label: "Categorías" },
+      { to: "/", icon: <FiBarChart2 />, label: "Dashboard" },
+      { to: "/productos", icon: <FiBox />, label: "Productos" },
+      { to: "/categorias", icon: <FiTag />, label: "Categorías" },
     ],
   },
   {
     label: "Operaciones",
     items: [
-      { to: "/caja", icon: "🛒", label: "Caja / POS" },
-      { to: "/combos", icon: "🎁", label: "Combos" },
-      { to: "/alertas", icon: "⚠️", label: "Alertas", badge: true },
-      { to: "/ventas", icon: "💳", label: "Ventas" },
-      { to: "/movimientos", icon: "🔄", label: "Movimientos" },
+      { to: "/caja", icon: <FiShoppingCart />, label: "Caja / POS" },
+      { to: "/combos", icon: <FiGift />, label: "Combos" },
+      {
+        to: "/alertas",
+        icon: <FiAlertTriangle />,
+        label: "Alertas",
+        badge: true,
+      },
+      { to: "/ventas", icon: <FiCreditCard />, label: "Ventas" },
+      { to: "/movimientos", icon: <FiRepeat />, label: "Movimientos" },
     ],
   },
   {
     label: "Análisis",
-    items: [{ to: "/reportes", icon: "📈", label: "Reportes" }],
+    items: [{ to: "/reportes", icon: <FiTrendingUp />, label: "Reportes" }],
   },
   {
     label: "Sistema",
-    items: [{ to: "/configuracion", icon: "⚙️", label: "Configuración" }],
+    items: [
+      { to: "/configuracion", icon: <FiSettings />, label: "Configuración" },
+    ],
   },
 ];
 
@@ -76,7 +98,9 @@ export default function AppLayout({ children }) {
       {/* SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-logo">
-          <div className="logo-icon">🏪</div>
+          <div className="logo-icon">
+            <FiHome style={{ color: "white", fontSize: 20 }} />
+          </div>
           <div>
             <h2>Pulpería JTN</h2>
             <span>Inventario & Ventas</span>
@@ -128,7 +152,7 @@ export default function AppLayout({ children }) {
               onClick={logout}
               title="Cerrar sesión"
             >
-              ↩
+              <FiLogOut />
             </button>
           </div>
         </div>
@@ -142,7 +166,7 @@ export default function AppLayout({ children }) {
               className="menu-toggle"
               onClick={() => setSidebarOpen((v) => !v)}
             >
-              ☰
+              <FiMenu />
             </button>
           </div>
 
