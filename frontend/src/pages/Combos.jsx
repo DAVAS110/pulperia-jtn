@@ -4,6 +4,14 @@ import { Modal, ConfirmDialog, EmptyState, Spinner } from "../components/ui";
 import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
 import useAuthStore from "../store/authStore";
+import {
+  FiGift,
+  FiSave,
+  FiLock,
+  FiUnlock,
+  FiTrash2,
+  FiX,
+} from "react-icons/fi";
 
 const EMPTY_FORM = {
   name: "",
@@ -165,7 +173,7 @@ export default function Combos() {
         <Spinner />
       ) : combos.length === 0 ? (
         <EmptyState
-          icon="🎁"
+          icon={<FiGift />}
           title="No hay combos"
           description="Crea combos para ofrecer paquetes especiales a tus clientes"
           action={
@@ -224,7 +232,7 @@ export default function Combos() {
                       }}
                     />
                   ) : (
-                    "🎁"
+                    <FiGift />
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -332,20 +340,28 @@ export default function Combos() {
                     className="btn btn-ghost btn-sm"
                     onClick={() => openEdit(c)}
                   >
-                    ✏️ Editar
+                    <FiSave /> Editar
                   </button>
                   <button
                     className={`btn btn-sm ${c.is_active ? "btn-ghost" : "btn-green"}`}
                     onClick={() => toggle(c)}
                   >
-                    {c.is_active ? "🔒 Desactivar" : "🔓 Activar"}
+                    {c.is_active ? (
+                      <>
+                        <FiLock /> Desactivar
+                      </>
+                    ) : (
+                      <>
+                        <FiUnlock /> Activar
+                      </>
+                    )}
                   </button>
                   <button
                     className="btn btn-sm btn-danger"
                     style={{ marginLeft: "auto" }}
                     onClick={() => setConfirm(c.id)}
                   >
-                    🗑️
+                    <FiTrash2 />
                   </button>
                 </div>
               )}
@@ -527,10 +543,16 @@ export default function Combos() {
 
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={() => setModal(false)}>
-            Cancelar
+            <FiX /> Cancelar
           </button>
           <button className="btn btn-accent" onClick={save} disabled={saving}>
-            {saving ? "Guardando…" : "💾 Guardar Combo"}
+            {saving ? (
+              "Guardando…"
+            ) : (
+              <>
+                <FiSave /> Guardar Combo
+              </>
+            )}
           </button>
         </div>
       </Modal>
