@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { toast } from "../store/toastStore";
+import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function AuthPage() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -24,7 +25,9 @@ export default function AuthPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="icon">🏪</div>
+          <div className="icon">
+            <FiHome />
+          </div>
           <h1>Pulperia JTN</h1>
           <p>Sistema de Gestión de Inventario</p>
         </div>
@@ -68,7 +71,7 @@ export default function AuthPage() {
                   padding: 0,
                 }}
               >
-                {showPass ? "🙈" : "👁️"}
+                {showPass ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
           </div>
