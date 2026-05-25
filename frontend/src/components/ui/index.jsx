@@ -1,5 +1,7 @@
-import React from 'react';
-import useToastStore from '../../store/toastStore';
+import React from "react";
+import { FiMail } from "react-icons/fi";
+import useToastStore from "../../store/toastStore";
+import { FiCheck, FiX, FiInfo } from "react-icons/fi";
 
 // ─── TOAST ────────────────────────────────────────────────
 export const ToastContainer = () => {
@@ -11,9 +13,15 @@ export const ToastContainer = () => {
           key={t.id}
           className={`toast toast-${t.type}`}
           onClick={() => removeToast(t.id)}
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: "pointer" }}
         >
-          {t.type === 'success' ? '✅ ' : t.type === 'error' ? '❌ ' : 'ℹ️ '}
+          {t.type === "success" ? (
+            <FiCheck />
+          ) : t.type === "error" ? (
+            <FiX />
+          ) : (
+            <FiInfo />
+          )}
           {t.message}
         </div>
       ))}
@@ -23,10 +31,10 @@ export const ToastContainer = () => {
 
 // ─── SPINNER ──────────────────────────────────────────────
 export const Spinner = ({ size = 36, center = true }) => (
-  <div className={center ? 'loading-center' : ''}>
+  <div className={center ? "loading-center" : ""}>
     <div
       className="spinner"
-      style={{ width: size, height: size, margin: center ? '40px auto' : 0 }}
+      style={{ width: size, height: size, margin: center ? "40px auto" : 0 }}
     />
   </div>
 );
@@ -35,11 +43,16 @@ export const Spinner = ({ size = 36, center = true }) => (
 export const Modal = ({ open, onClose, title, children, maxWidth = 560 }) => {
   if (!open) return null;
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal" style={{ maxWidth }}>
         <div className="modal-header">
           <span className="modal-title">{title}</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose}>
+            ✕
+          </button>
         </div>
         <div className="modal-body">{children}</div>
       </div>
@@ -48,12 +61,31 @@ export const Modal = ({ open, onClose, title, children, maxWidth = 560 }) => {
 };
 
 // ─── CONFIRM DIALOG ───────────────────────────────────────
-export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, danger }) => (
-  <Modal open={open} onClose={onClose} title={title || 'Confirmar'} maxWidth={420}>
-    <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 20 }}>{message}</p>
+export const ConfirmDialog = ({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  danger,
+}) => (
+  <Modal
+    open={open}
+    onClose={onClose}
+    title={title || "Confirmar"}
+    maxWidth={420}
+  >
+    <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
+      {message}
+    </p>
     <div className="modal-footer">
-      <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-      <button className={`btn ${danger ? 'btn-danger' : 'btn-accent'}`} onClick={onConfirm}>
+      <button className="btn btn-ghost" onClick={onClose}>
+        Cancelar
+      </button>
+      <button
+        className={`btn ${danger ? "btn-danger" : "btn-accent"}`}
+        onClick={onConfirm}
+      >
         Confirmar
       </button>
     </div>
@@ -61,7 +93,12 @@ export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, danger
 );
 
 // ─── EMPTY STATE ──────────────────────────────────────────
-export const EmptyState = ({ icon = '📭', title, description, action }) => (
+export const EmptyState = ({
+  icon = <FiMail />,
+  title,
+  description,
+  action,
+}) => (
   <div className="empty-state">
     <div className="icon">{icon}</div>
     <h3>{title}</h3>
@@ -71,14 +108,16 @@ export const EmptyState = ({ icon = '📭', title, description, action }) => (
 );
 
 // ─── BADGE ────────────────────────────────────────────────
-export const Badge = ({ children, color = 'green' }) => (
+export const Badge = ({ children, color = "green" }) => (
   <span className={`badge badge-${color}`}>{children}</span>
 );
 
 // ─── STAT CARD ────────────────────────────────────────────
 export const StatCard = ({ icon, label, value, sub, iconBg }) => (
   <div className="stat-card">
-    <div className="stat-icon" style={{ background: iconBg }}>{icon}</div>
+    <div className="stat-icon" style={{ background: iconBg }}>
+      {icon}
+    </div>
     <div>
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
@@ -93,7 +132,7 @@ export const ColorSwatches = ({ value, onChange, colors }) => (
     {colors.map((c) => (
       <div
         key={c}
-        className={`swatch ${value === c ? 'selected' : ''}`}
+        className={`swatch ${value === c ? "selected" : ""}`}
         style={{ background: c }}
         onClick={() => onChange(c)}
       />
@@ -106,12 +145,39 @@ export const Pagination = ({ page, total, limit, onPage }) => {
   const totalPages = Math.ceil(total / limit);
   if (totalPages <= 1) return null;
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '14px 20px', borderTop: '1px solid var(--border)' }}>
-      <button className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>← Anterior</button>
-      <span style={{ fontSize: 13, color: 'var(--text3)', flex: 1, textAlign: 'center' }}>
+    <div
+      style={{
+        display: "flex",
+        gap: 6,
+        alignItems: "center",
+        padding: "14px 20px",
+        borderTop: "1px solid var(--border)",
+      }}
+    >
+      <button
+        className="btn btn-ghost btn-sm"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+      >
+        ← Anterior
+      </button>
+      <span
+        style={{
+          fontSize: 13,
+          color: "var(--text3)",
+          flex: 1,
+          textAlign: "center",
+        }}
+      >
         Página {page} de {totalPages} ({total} total)
       </span>
-      <button className="btn btn-ghost btn-sm" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>Siguiente →</button>
+      <button
+        className="btn btn-ghost btn-sm"
+        disabled={page >= totalPages}
+        onClick={() => onPage(page + 1)}
+      >
+        Siguiente →
+      </button>
     </div>
   );
 };
