@@ -4,6 +4,15 @@ import {
   requestNotificationPermission,
   sendLowStockNotification,
 } from "../hooks/usePWA";
+import {
+  FiHome,
+  FiUpload,
+  FiFileText,
+  FiPlus,
+  FiCheck,
+  FiRefreshCw,
+  FiBell,
+} from "react-icons/fi";
 import { productsAPI } from "../services/api.js";
 import useAuthStore from "../store/authStore.js";
 
@@ -45,7 +54,9 @@ export function InstallBanner() {
           animation: "slideUp 0.3s ease",
         }}
       >
-        <span style={{ fontSize: 28, flexShrink: 0 }}>🏪</span>
+        <span style={{ fontSize: 28, flexShrink: 0 }}>
+          <FiHome />
+        </span>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 14 }}>
             Instalar Pulperia JTN
@@ -126,7 +137,9 @@ export function InstallBanner() {
                 marginBottom: 6,
               }}
             >
-              🏪 Instalar en iPhone
+              <>
+                <FiHome /> Instalar en iPhone
+              </>
             </div>
             <p style={{ fontSize: 13.5, color: "#6b5c42", marginBottom: 20 }}>
               Sigue estos pasos para agregar Pulperia JTN a tu pantalla de
@@ -135,15 +148,25 @@ export function InstallBanner() {
             {[
               [
                 "1",
-                "📤",
+                <FiUpload />,
                 "Toca el botón Compartir",
                 "El ícono de cuadro con flecha hacia arriba en Safari",
               ],
-              ["2", "📜", "Desplázate hacia abajo", "En el menú que aparece"],
-              ["3", "➕", 'Toca "Agregar a inicio"', "Add to Home Screen"],
+              [
+                "2",
+                <FiFileText />,
+                "Desplázate hacia abajo",
+                "En el menú que aparece",
+              ],
+              [
+                "3",
+                <FiPlus />,
+                'Toca "Agregar a inicio"',
+                "Add to Home Screen",
+              ],
               [
                 "4",
-                "✅",
+                <FiCheck />,
                 'Toca "Agregar"',
                 "La app aparecerá en tu pantalla de inicio",
               ],
@@ -226,7 +249,9 @@ export function UpdateToast() {
         animation: "toastIn 0.25s ease",
       }}
     >
-      <span style={{ fontSize: 20 }}>🔄</span>
+      <span style={{ fontSize: 20 }}>
+        <FiRefreshCw />
+      </span>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, fontSize: 13 }}>
           Nueva versión disponible
@@ -297,7 +322,7 @@ export function NotificationButton() {
           opacity: checking ? 0.5 : 1,
         }}
       >
-        🔔
+        <FiBell />
       </button>
     );
   }
@@ -322,7 +347,9 @@ export function NotificationButton() {
         gap: 5,
       }}
     >
-      🔔 Activar alertas
+      <>
+        <FiBell /> Activar alertas
+      </>
     </button>
   );
 }
