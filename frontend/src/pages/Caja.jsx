@@ -5,6 +5,22 @@ import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
 import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
 import { compressImage, formatBytes, base64Size } from "../utils/imageUtils";
+import {
+  FiGift,
+  FiSearch,
+  FiBox,
+  FiShoppingCart,
+  FiX,
+  FiCheck,
+  FiCreditCard,
+  FiTrash2,
+  FiDollarSign,
+  FiSmartphone,
+  FiCamera,
+  FiImage,
+  FiSmile,
+  FiDownload,
+} from "react-icons/fi";
 
 export default function Caja() {
   const [products, setProducts] = useState([]);
@@ -27,27 +43,6 @@ export default function Caja() {
   const [activeTab, setActiveTab] = useState("productos"); // 'productos' | 'combos'
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
-
-  const getImageSrc = (src) => {
-    if (!src) return null;
-    return src;
-  };
-
-  const ProductImage = ({ src, alt, style }) => {
-    const [hasError, setHasError] = useState(false);
-    const imageSrc = getImageSrc(src);
-    if (!imageSrc || hasError) {
-      return "📦";
-    }
-    return (
-      <img
-        src={imageSrc}
-        alt={alt}
-        style={style}
-        onError={() => setHasError(true)}
-      />
-    );
-  };
 
   const loadCombos = useCallback(async () => {
     try {
@@ -157,7 +152,7 @@ export default function Caja() {
         {
           combo_id: combo.id,
           product_id: null,
-          name: `🎁 ${combo.name}`,
+          name: combo.name,
           sku: "COMBO",
           price: parseFloat(combo.price),
           quantity: 1,
@@ -353,7 +348,9 @@ export default function Caja() {
           style={{ paddingBottom: cart.length > 0 ? 240 : 90 }}
         >
           <div className="search-input" style={{ marginBottom: 16 }}>
-            <span style={{ color: "var(--text3)" }}>🔍</span>
+            <span style={{ color: "var(--text3)" }}>
+              <FiSearch />
+            </span>
             <input
               placeholder="Buscar producto…"
               value={search}
@@ -383,16 +380,20 @@ export default function Caja() {
                   }
                 >
                   <div className="prod-img">
-                    <ProductImage
-                      src={p.image_url}
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        borderRadius: 8,
-                      }}
-                    />
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: 8,
+                        }}
+                      />
+                    ) : (
+                      <FiBox />
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 13.5 }}>
@@ -409,6 +410,7 @@ export default function Caja() {
               ))}
             </div>
           )}
+
           {/* Tabs productos / combos */}
           {!search && (
             <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
@@ -416,13 +418,13 @@ export default function Caja() {
                 onClick={() => setActiveTab("productos")}
                 className={`btn btn-sm ${activeTab === "productos" ? "btn-accent" : "btn-ghost"}`}
               >
-                📦 Productos
+                <FiBox /> Productos
               </button>
               <button
                 onClick={() => setActiveTab("combos")}
                 className={`btn btn-sm ${activeTab === "combos" ? "btn-accent" : "btn-ghost"}`}
               >
-                🎁 Combos ({combos.length})
+                <FiGift /> Combos ({combos.length})
               </button>
             </div>
           )}
@@ -446,7 +448,9 @@ export default function Caja() {
                     color: "var(--text3)",
                   }}
                 >
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>
+                    <FiGift />
+                  </div>
                   <p style={{ fontSize: 13 }}>No hay combos activos</p>
                 </div>
               ) : (
@@ -472,7 +476,9 @@ export default function Caja() {
                       e.currentTarget.style.boxShadow = "";
                     }}
                   >
-                    <div style={{ fontSize: 26, marginBottom: 6 }}>🎁</div>
+                    <div style={{ fontSize: 26, marginBottom: 6 }}>
+                      <FiGift />
+                    </div>
                     <div
                       style={{
                         fontWeight: 700,
@@ -558,15 +564,19 @@ export default function Caja() {
                       flexShrink: 0,
                     }}
                   >
-                    <ProductImage
-                      src={p.image_url}
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <FiBox />
+                    )}
                   </div>
                   <div
                     style={{
@@ -611,7 +621,9 @@ export default function Caja() {
               justifyContent: "space-between",
             }}
           >
-            <h3>🛒 Carrito ({cart.length})</h3>
+            <h3 style={{ margin: 0 }}>
+              <FiShoppingCart /> Carrito ({cart.length})
+            </h3>
             {cart.length > 0 && (
               <span
                 style={{
@@ -624,37 +636,40 @@ export default function Caja() {
               </span>
             )}
           </div>
-          <div className="cart-items">
-            {cart.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px 20px",
-                  color: "var(--text3)",
-                }}
-              >
-                <div style={{ fontSize: 36, marginBottom: 8 }}>🛒</div>
-                <p style={{ fontSize: 13 }}>Toca un producto para agregarlo</p>
+
+          {cart.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "40px 20px",
+                color: "var(--text3)",
+              }}
+            >
+              <div style={{ fontSize: 36, marginBottom: 8 }}>
+                <FiShoppingCart />
               </div>
-            ) : (
-              cart.map((item) => (
-                <div key={item.product_id} className="cart-item">
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 7,
-                      background: "var(--surface2)",
-                      border: "1px solid var(--border)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 16,
-                      overflow: "hidden",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <ProductImage
+              <p style={{ fontSize: 13 }}>Toca un producto para agregarlo</p>
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div key={item.product_id ?? item.combo_id} className="cart-item">
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 7,
+                    background: "var(--surface2)",
+                    border: "1px solid var(--border)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 16,
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.image_url ? (
+                    <img
                       src={item.image_url}
                       alt={item.name}
                       style={{
@@ -663,89 +678,91 @@ export default function Caja() {
                         objectFit: "cover",
                       }}
                     />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      className="cart-item-name"
-                      style={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {item.name}
-                    </div>
-                    <div className="cart-item-price">{fmt(item.price)} c/u</div>
-                  </div>
-                  <div className="qty-controls">
-                    <button
-                      className="qty-btn"
-                      onClick={() => updateQty(item.product_id, -1)}
-                    >
-                      −
-                    </button>
-                    <span className="qty-display">{item.quantity}</span>
-                    <button
-                      className="qty-btn"
-                      onClick={() => updateQty(item.product_id, 1)}
-                    >
-                      +
-                    </button>
-                  </div>
+                  ) : (
+                    <FiBox />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
+                    className="cart-item-name"
                     style={{
-                      fontWeight: 700,
-                      fontSize: 13,
-                      minWidth: 64,
-                      textAlign: "right",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {fmt(item.price * item.quantity)}
+                    {item.name}
                   </div>
+                  <div className="cart-item-price">{fmt(item.price)} c/u</div>
+                </div>
+                <div className="qty-controls">
                   <button
-                    className="btn-icon"
-                    style={{ fontSize: 12, width: 26, height: 26 }}
-                    onClick={() => removeFromCart(item.product_id)}
+                    className="qty-btn"
+                    onClick={() => updateQty(item.product_id, -1)}
                   >
-                    ✕
+                    −
+                  </button>
+                  <span className="qty-display">{item.quantity}</span>
+                  <button
+                    className="qty-btn"
+                    onClick={() => updateQty(item.product_id, 1)}
+                  >
+                    +
                   </button>
                 </div>
-              ))
-            )}
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    minWidth: 64,
+                    textAlign: "right",
+                  }}
+                >
+                  {fmt(item.price * item.quantity)}
+                </div>
+                <button
+                  className="btn-icon"
+                  style={{ fontSize: 12, width: 26, height: 26 }}
+                  onClick={() => removeFromCart(item.product_id)}
+                >
+                  <FiX />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="cart-footer">
+          <div className="cart-total">
+            <span className="cart-total-label">TOTAL</span>
+            <span className="cart-total-value">{fmt(total)}</span>
           </div>
-          <div className="cart-footer">
-            <div className="cart-total">
-              <span className="cart-total-label">TOTAL</span>
-              <span className="cart-total-value">{fmt(total)}</span>
-            </div>
+          <button
+            className="btn btn-accent"
+            style={{
+              width: "100%",
+              padding: 14,
+              fontSize: 15,
+              justifyContent: "center",
+            }}
+            onClick={openPayModal}
+            disabled={!cart.length}
+          >
+            <FiCreditCard /> Cobrar
+          </button>
+          {cart.length > 0 && (
             <button
-              className="btn btn-accent"
+              className="btn btn-ghost"
               style={{
                 width: "100%",
-                padding: 14,
-                fontSize: 15,
+                marginTop: 8,
+                fontSize: 12,
                 justifyContent: "center",
               }}
-              onClick={openPayModal}
-              disabled={!cart.length}
+              onClick={() => setCart([])}
             >
-              💳 Cobrar
+              <FiTrash2 /> Limpiar carrito
             </button>
-            {cart.length > 0 && (
-              <button
-                className="btn btn-ghost"
-                style={{
-                  width: "100%",
-                  marginTop: 8,
-                  fontSize: 12,
-                  justifyContent: "center",
-                }}
-                onClick={() => setCart([])}
-              >
-                🗑️ Limpiar carrito
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
@@ -783,7 +800,7 @@ export default function Caja() {
           </div>
           {cart.map((i) => (
             <div
-              key={i.product_id}
+              key={i.product_id ?? i.combo_id}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -816,7 +833,15 @@ export default function Caja() {
                   removePhoto();
                 }}
               >
-                {m === "efectivo" ? "💵 Efectivo" : "📱 SINPE"}
+                {m === "efectivo" ? (
+                  <>
+                    <FiDollarSign /> Efectivo
+                  </>
+                ) : (
+                  <>
+                    <FiSmartphone /> SINPE
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -881,7 +906,9 @@ export default function Caja() {
               />
             </div>
             <div className="field">
-              <label>📷 Foto del comprobante (opcional)</label>
+              <label>
+                <FiCamera /> Foto del comprobante (opcional)
+              </label>
               {photoPreview ? (
                 <div style={{ position: "relative" }}>
                   <img
@@ -917,7 +944,7 @@ export default function Caja() {
                       justifyContent: "center",
                     }}
                   >
-                    ✕
+                    <FiX />
                   </button>
                   <div
                     style={{
@@ -927,7 +954,7 @@ export default function Caja() {
                       textAlign: "center",
                     }}
                   >
-                    Toca para ampliar · Toca ✕ para quitar
+                    Toca para ampliar · Toca <FiX /> para quitar
                   </div>
                 </div>
               ) : (
@@ -937,14 +964,14 @@ export default function Caja() {
                     style={{ flex: 1, justifyContent: "center" }}
                     onClick={() => cameraInputRef.current?.click()}
                   >
-                    📷 Cámara
+                    <FiCamera /> Cámara
                   </button>
                   <button
                     className="btn btn-ghost"
                     style={{ flex: 1, justifyContent: "center" }}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    🖼️ Galería
+                    <FiImage /> Galería
                   </button>
                   <input
                     ref={cameraInputRef}
@@ -999,12 +1026,18 @@ export default function Caja() {
       <Modal
         open={receiptModal}
         onClose={() => setReceiptModal(false)}
-        title="✅ Venta Exitosa"
+        title={
+          <>
+            <FiCheck /> Venta Exitosa
+          </>
+        }
         maxWidth={380}
       >
         {lastSale && (
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
+            <div style={{ fontSize: 52, marginBottom: 12 }}>
+              <FiSmile />
+            </div>
             <div
               style={{
                 fontWeight: 800,
@@ -1016,21 +1049,29 @@ export default function Caja() {
               {fmt(lastSale.total)}
             </div>
             <div
-              style={{ fontSize: 13, color: "var(--text3)", marginBottom: 4 }}
+              style={{ fontSize: 13, color: "var(--text3)", marginBottom: 8 }}
             >
-              {lastSale.payment_method === "efectivo"
-                ? "💵 Efectivo"
-                : "📱 SINPE"}
+              {lastSale.payment_method === "efectivo" ? (
+                <>
+                  <FiDollarSign /> Efectivo
+                </>
+              ) : (
+                <>
+                  <FiSmartphone /> SINPE
+                </>
+              )}
               {lastSale.change_given > 0 &&
                 ` · Cambio: ${fmt(lastSale.change_given)}`}
             </div>
+
             {lastSale.sinpe_description && (
               <div
-                style={{ fontSize: 12, color: "var(--text3)", marginBottom: 2 }}
+                style={{ fontSize: 12, color: "var(--text3)", marginBottom: 6 }}
               >
                 Ref: {lastSale.sinpe_description}
               </div>
             )}
+
             {lastSale.received_by && (
               <div
                 style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}
@@ -1038,23 +1079,7 @@ export default function Caja() {
                 Recibido por: <strong>{lastSale.received_by}</strong>
               </div>
             )}
-            {lastSale.sinpe_photo && (
-              <img
-                src={lastSale.sinpe_photo}
-                alt="Comprobante"
-                onClick={() => setViewPhotoModal(lastSale.sinpe_photo)}
-                style={{
-                  width: "100%",
-                  maxHeight: 140,
-                  objectFit: "cover",
-                  borderRadius: 10,
-                  border: "1px solid var(--border)",
-                  marginBottom: 12,
-                  cursor: "pointer",
-                  display: "block",
-                }}
-              />
-            )}
+
             <div
               style={{
                 background: "var(--surface2)",
@@ -1081,6 +1106,7 @@ export default function Caja() {
                 </div>
               ))}
             </div>
+
             <button
               className="btn btn-accent"
               style={{ width: "100%", justifyContent: "center" }}
@@ -1096,7 +1122,11 @@ export default function Caja() {
       <Modal
         open={!!viewPhotoModal}
         onClose={() => setViewPhotoModal(null)}
-        title="📷 Comprobante SINPE"
+        title={
+          <>
+            <FiCamera /> Comprobante SINPE
+          </>
+        }
         maxWidth={600}
       >
         {viewPhotoModal && (
