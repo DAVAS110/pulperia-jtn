@@ -3,6 +3,7 @@ import { reportsAPI } from "../services/api";
 import { Modal } from "./ui";
 import { toast } from "../store/toastStore";
 import { fmt, fmtDate, fmtDateTime } from "../utils/helpers";
+import { FiDollarSign, FiSmartphone, FiMail } from "react-icons/fi";
 
 const MOVEMENT_LABELS = {
   entrada: "Entrada",
@@ -113,9 +114,9 @@ export default function DailyClosure() {
     const safeGeneratedBy = safeDateStr(data.generated_by || "");
 
     // ── HEADER ───────────────────────────────────────────────
-    doc.setFillColor(45, 21, 7);
+    doc.setFillColor(2, 132, 199); // --accent2 celeste
     doc.rect(0, 0, W, 32, "F");
-    doc.setFillColor(200, 87, 10);
+    doc.setFillColor(14, 165, 233); // --accent celeste
     doc.rect(0, 28, W, 4, "F");
 
     doc.setTextColor(255, 255, 255);
@@ -144,11 +145,11 @@ export default function DailyClosure() {
     doc.setTextColor(26, 18, 8);
 
     // ── SECCION 1: RESUMEN ────────────────────────────────────
-    doc.setFillColor(245, 240, 232);
+    doc.setFillColor(230, 248, 255); // --accent-light
     doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(200, 87, 10);
+    doc.setTextColor(14, 165, 233); // --accent celeste
     doc.text(isRange ? "RESUMEN DEL PERIODO" : "RESUMEN DEL DIA", 18, y + 5.5);
     doc.setTextColor(26, 18, 8);
     y += 13;
@@ -159,7 +160,7 @@ export default function DailyClosure() {
       {
         label: "Total Ventas",
         value: pdfFmt(data.total_sales),
-        color: [200, 87, 10],
+        color: [14, 165, 233], // --accent celeste
       },
       {
         label: "Transacciones",
@@ -455,29 +456,29 @@ export default function DailyClosure() {
         filename: `cierre-caja-${suffix}.pdf`,
         html: `
           <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
-            <div style="background:#2d1507;color:white;padding:24px;border-radius:12px 12px 0 0;border-bottom:4px solid #c8570a">
+            <div style="background:#0284c7;color:white;padding:24px;border-radius:12px 12px 0 0;border-bottom:4px solid #0ea5e9">
               <h2 style="margin:0;font-size:22px">Pulperia JTN</h2>
               <p style="margin:6px 0 0;opacity:0.8;font-size:14px">${isRange ? "Reporte de Ventas" : "Cierre de Caja"} &mdash; ${periodLabel}</p>
             </div>
-            <div style="background:#faf7f2;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e8dfd0">
-              <p style="color:#1a1208;font-size:14px">Adjunto el informe del periodo <strong>${periodLabel}</strong>.</p>
+            <div style="background:#e6f8ff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #7dd3fc">
+              <p style="color:#0c4a6e;font-size:14px">Adjunto el informe del periodo <strong>${periodLabel}</strong>.</p>
               <table style="width:100%;border-collapse:collapse;margin:16px 0">
-                <tr><td style="padding:10px 14px;background:#f5f0e8;font-weight:600;font-size:13px;color:#6b5c42">Total Ventas</td>
-                    <td style="padding:10px 14px;background:#f5f0e8;font-weight:800;font-size:16px;color:#c8570a;text-align:right">${fmt(data.total_sales)}</td></tr>
-                <tr><td style="padding:10px 14px;font-size:13px;color:#6b5c42">Transacciones</td>
+                <tr><td style="padding:10px 14px;background:#cef4ff;font-weight:600;font-size:13px;color:#0c4a6e">Total Ventas</td>
+                    <td style="padding:10px 14px;background:#cef4ff;font-weight:800;font-size:16px;color:#0ea5e9;text-align:right">${fmt(data.total_sales)}</td></tr>
+                <tr><td style="padding:10px 14px;font-size:13px;color:#0c4a6e">Transacciones</td>
                     <td style="padding:10px 14px;font-weight:600;text-align:right">${data.total_count}</td></tr>
                 ${(data.treasury || [])
                   .map(
                     (t) => `
-                <tr><td style="padding:10px 14px;background:#f5f0e8;font-size:13px;color:#6b5c42">${t.type === "caja" ? "Saldo Caja" : "Saldo SINPE"}</td>
-                    <td style="padding:10px 14px;background:#f5f0e8;font-weight:700;text-align:right">${fmt(t.balance)}</td></tr>`,
+                <tr><td style="padding:10px 14px;background:#cef4ff;font-size:13px;color:#0c4a6e">${t.type === "caja" ? "Saldo Caja" : "Saldo SINPE"}</td>
+                    <td style="padding:10px 14px;background:#cef4ff;font-weight:700;text-align:right">${fmt(t.balance)}</td></tr>`,
                   )
                   .join("")}
-                <tr><td style="padding:10px 14px;font-size:13px;color:#6b5c42">Alertas de Stock</td>
+                <tr><td style="padding:10px 14px;font-size:13px;color:#0c4a6e">Alertas de Stock</td>
                     <td style="padding:10px 14px;font-weight:600;text-align:right;color:${data.low_stock?.length > 0 ? "#c0392b" : "#2d7a4f"}">
                       ${data.low_stock?.length > 0 ? `${data.low_stock.length} productos con bajo stock` : "Todo OK"}</td></tr>
               </table>
-              <p style="color:#a8937a;font-size:12px;margin-top:20px;border-top:1px solid #e8dfd0;padding-top:12px">
+              <p style="color:#0284c7;font-size:12px;margin-top:20px;border-top:1px solid #7dd3fc;padding-top:12px">
                 Generado por: <strong>${data.generated_by}</strong> &middot; ${fmtDateTime(data.generated_at)}
               </p>
             </div>
@@ -706,7 +707,15 @@ export default function DailyClosure() {
                       marginBottom: 2,
                     }}
                   >
-                    {t.type === "caja" ? "💵 CAJA" : "📱 SINPE"}
+                    {t.type === "caja" ? (
+                      <>
+                        <FiDollarSign /> CAJA
+                      </>
+                    ) : (
+                      <>
+                        <FiSmartphone /> SINPE
+                      </>
+                    )}
                   </div>
                   <div
                     style={{
@@ -801,7 +810,11 @@ export default function DailyClosure() {
                             className={`badge ${sale.payment_method === "efectivo" ? "badge-green" : "badge-blue"}`}
                             style={{ fontSize: 10 }}
                           >
-                            {sale.payment_method === "efectivo" ? "💵" : "📱"}{" "}
+                            {sale.payment_method === "efectivo" ? (
+                              <FiDollarSign />
+                            ) : (
+                              <FiSmartphone />
+                            )}{" "}
                             {sale.payment_method}
                           </span>
                         </div>
@@ -857,7 +870,9 @@ export default function DailyClosure() {
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>
-                📧 Enviar por Email
+                <>
+                  <FiMail /> Enviar por Email
+                </>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
