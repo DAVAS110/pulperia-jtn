@@ -4,6 +4,21 @@ import { Spinner, Modal, ConfirmDialog } from "../components/ui";
 import { toast } from "../store/toastStore";
 import useAuthStore from "../store/authStore";
 import { fmtDateTime, timeAgo } from "../utils/helpers";
+import {
+  FiUser,
+  FiHome,
+  FiUsers,
+  FiKey,
+  FiUserCheck,
+  FiEye,
+  FiEyeOff,
+  FiEdit,
+  FiLock,
+  FiUnlock,
+  FiTrash2,
+  FiAlertTriangle,
+  FiSave,
+} from "react-icons/fi";
 
 const EMPTY_FORM = { name: "", email: "", password: "", role: "employee" };
 
@@ -126,7 +141,7 @@ export default function Configuracion() {
         {/* Mi perfil */}
         <div className="card card-body">
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-            👤 Mi Perfil
+            <FiUser /> Mi Perfil
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
@@ -156,7 +171,15 @@ export default function Configuracion() {
                 className={`badge ${user?.role === "admin" ? "badge-blue" : "badge-green"}`}
                 style={{ marginTop: 6 }}
               >
-                {user?.role === "admin" ? "🔑 Administrador" : "👷 Empleado"}
+                {user?.role === "admin" ? (
+                  <>
+                    <FiKey /> Administrador
+                  </>
+                ) : (
+                  <>
+                    <FiUserCheck /> Empleado
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -165,7 +188,7 @@ export default function Configuracion() {
         {/* App info */}
         <div className="card card-body">
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-            🏪 Acerca de Pulperia JTN
+            <FiHome /> Acerca de Pulperia JTN
           </div>
           {[
             ["Versión", "1.0.0"],
@@ -197,7 +220,7 @@ export default function Configuracion() {
           <div className="page-header" style={{ marginBottom: 16 }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 17 }}>
-                👥 Gestión de Usuarios
+                <FiUsers /> Gestión de Usuarios
               </div>
               <p style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>
                 {users.length} usuarios · {admins.length} admin ·{" "}
@@ -282,7 +305,15 @@ export default function Configuracion() {
                           <span
                             className={`badge ${u.role === "admin" ? "badge-blue" : "badge-green"}`}
                           >
-                            {u.role === "admin" ? "🔑 Admin" : "👷 Empleado"}
+                            {u.role === "admin" ? (
+                              <>
+                                <FiKey /> Admin
+                              </>
+                            ) : (
+                              <>
+                                <FiUserCheck /> Empleado
+                              </>
+                            )}
                           </span>
                         </td>
                         <td style={{ fontSize: 12.5, color: "var(--text3)" }}>
@@ -305,7 +336,7 @@ export default function Configuracion() {
                               onClick={() => openEdit(u)}
                               title="Editar"
                             >
-                              ✏️
+                              <FiEdit />
                             </button>
                             {u.id !== user.id && (
                               <>
@@ -316,7 +347,7 @@ export default function Configuracion() {
                                     setConfirm({ user: u, action: "toggle" })
                                   }
                                 >
-                                  {u.is_active ? "🔒" : "🔓"}
+                                  {u.is_active ? <FiLock /> : <FiUnlock />}
                                 </button>
                                 <button
                                   className="btn-icon"
@@ -326,7 +357,7 @@ export default function Configuracion() {
                                   }
                                   style={{ color: "var(--red)" }}
                                 >
-                                  🗑️
+                                  <FiTrash2 />
                                 </button>
                               </>
                             )}
@@ -415,7 +446,7 @@ export default function Configuracion() {
                   color: "var(--text3)",
                 }}
               >
-                {showPass ? "🙈" : "👁️"}
+                {showPass ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
           </div>
@@ -426,8 +457,8 @@ export default function Configuracion() {
               onChange={set("role")}
               disabled={modal === "edit" && editing?.id === user.id}
             >
-              <option value="employee">👷 Empleado</option>
-              <option value="admin">🔑 Administrador</option>
+              <option value="employee">Empleado</option>
+              <option value="admin">Administrador</option>
             </select>
           </div>
         </div>
@@ -446,9 +477,17 @@ export default function Configuracion() {
             marginBottom: 4,
           }}
         >
-          {form.role === "admin"
-            ? "🔑 Acceso completo: ventas, inventario, reportes, usuarios y tesorería."
-            : "👷 Acceso a ventas, inventario y reportes. Sin acceso a usuarios ni retiros."}
+          {form.role === "admin" ? (
+            <>
+              <FiKey /> Acceso completo: ventas, inventario, reportes, usuarios
+              y tesorería.
+            </>
+          ) : (
+            <>
+              <FiUserCheck /> Acceso a ventas, inventario y reportes. Sin acceso
+              a usuarios ni retiros.
+            </>
+          )}
         </div>
 
         <div className="modal-footer">
@@ -456,11 +495,15 @@ export default function Configuracion() {
             Cancelar
           </button>
           <button className="btn btn-accent" onClick={save} disabled={saving}>
-            {saving
-              ? "Guardando…"
-              : modal === "create"
-                ? "+ Crear Usuario"
-                : "💾 Guardar Cambios"}
+            {saving ? (
+              "Guardando…"
+            ) : modal === "create" ? (
+              "+ Crear Usuario"
+            ) : (
+              <>
+                <FiSave /> Guardar Cambios
+              </>
+            )}
           </button>
         </div>
       </Modal>
@@ -471,9 +514,15 @@ export default function Configuracion() {
           open
           onClose={() => setConfirm(null)}
           title={
-            confirm.user.is_active
-              ? "🔒 Desactivar cuenta"
-              : "🔓 Activar cuenta"
+            confirm.user.is_active ? (
+              <>
+                <FiLock /> Desactivar cuenta
+              </>
+            ) : (
+              <>
+                <FiUnlock /> Activar cuenta
+              </>
+            )
           }
           maxWidth={400}
         >
@@ -490,7 +539,15 @@ export default function Configuracion() {
               className={`btn ${confirm.user.is_active ? "btn-danger" : "btn-green"}`}
               onClick={() => toggleStatus(confirm.user)}
             >
-              {confirm.user.is_active ? "🔒 Desactivar" : "🔓 Activar"}
+              {confirm.user.is_active ? (
+                <>
+                  <FiLock /> Desactivar
+                </>
+              ) : (
+                <>
+                  <FiUnlock /> Activar
+                </>
+              )}
             </button>
           </div>
         </Modal>
@@ -500,7 +557,11 @@ export default function Configuracion() {
         <Modal
           open
           onClose={() => setConfirm(null)}
-          title="🗑️ Eliminar Usuario"
+          title={
+            <>
+              <FiTrash2 /> Eliminar Usuario
+            </>
+          }
           maxWidth={400}
         >
           <div
@@ -513,7 +574,8 @@ export default function Configuracion() {
               fontSize: 13,
             }}
           >
-            ⚠️ Esta acción es <strong>permanente</strong> e irreversible.
+            <FiAlertTriangle /> Esta acción es <strong>permanente</strong> e
+            irreversible.
           </div>
           <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
             ¿Eliminar definitivamente la cuenta de{" "}
@@ -528,7 +590,7 @@ export default function Configuracion() {
               className="btn btn-danger"
               onClick={() => deleteUser(confirm.user.id)}
             >
-              🗑️ Eliminar permanentemente
+              <FiTrash2 /> Eliminar permanentemente
             </button>
           </div>
         </Modal>

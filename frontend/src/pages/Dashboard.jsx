@@ -5,6 +5,15 @@ import { StatCard } from "../components/ui";
 import { StatCardSkeleton, ActivitySkeleton } from "../components/Skeletons";
 import TreasuryPanel from "../components/treasury/TreasuryPanel";
 import { fmt, timeAgo, MOVEMENT_COLORS } from "../utils/helpers";
+import {
+  FiShoppingCart,
+  FiBox,
+  FiDollarSign,
+  FiAlertTriangle,
+  FiFileText,
+  FiRepeat,
+  FiTrendingUp,
+} from "react-icons/fi";
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
@@ -26,7 +35,7 @@ export default function Dashboard() {
           <p>Resumen general de tu pulpería</p>
         </div>
         <button className="btn btn-accent" onClick={() => navigate("/caja")}>
-          🛒 Abrir Caja
+          <FiShoppingCart /> Abrir Caja
         </button>
       </div>
 
@@ -41,21 +50,21 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard
-              icon="📦"
+              icon={<FiBox />}
               label="Total Productos"
               value={data?.total_products ?? 0}
               sub="Productos activos"
               iconBg="#dbeafe"
             />
             <StatCard
-              icon="💰"
+              icon={<FiDollarSign />}
               label="Valor del Stock"
               value={fmt(data?.stock_value)}
               sub="Precio venta × cantidad"
               iconBg="#d4eddf"
             />
             <StatCard
-              icon="⚠️"
+              icon={<FiAlertTriangle />}
               label="Bajo Stock"
               value={
                 <span
@@ -70,7 +79,7 @@ export default function Dashboard() {
               iconBg="#fde8e6"
             />
             <StatCard
-              icon="🧾"
+              icon={<FiFileText />}
               label="Ventas de Hoy"
               value={fmt(data?.sales_today?.total)}
               sub={`${data?.sales_today?.count ?? 0} transacciones`}
@@ -179,10 +188,22 @@ export default function Dashboard() {
               }}
             >
               {[
-                { icon: "🛒", label: "Nueva Venta", to: "/caja" },
-                { icon: "📦", label: "Agregar Producto", to: "/productos" },
-                { icon: "🔄", label: "Entrada de Stock", to: "/movimientos" },
-                { icon: "📈", label: "Ver Reportes", to: "/reportes" },
+                { icon: <FiShoppingCart />, label: "Nueva Venta", to: "/caja" },
+                {
+                  icon: <FiBox />,
+                  label: "Agregar Producto",
+                  to: "/productos",
+                },
+                {
+                  icon: <FiRepeat />,
+                  label: "Entrada de Stock",
+                  to: "/movimientos",
+                },
+                {
+                  icon: <FiTrendingUp />,
+                  label: "Ver Reportes",
+                  to: "/reportes",
+                },
               ].map((a) => (
                 <button
                   key={a.to}
@@ -209,7 +230,9 @@ export default function Dashboard() {
                 className="card-header"
                 style={{ background: "var(--red-light)" }}
               >
-                <h3 style={{ color: "var(--red)" }}>⚠️ Alertas de Stock</h3>
+                <h3 style={{ color: "var(--red)" }}>
+                  <FiAlertTriangle /> Alertas de Stock
+                </h3>
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => navigate("/alertas")}
