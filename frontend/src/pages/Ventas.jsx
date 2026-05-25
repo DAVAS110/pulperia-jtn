@@ -3,6 +3,16 @@ import { salesAPI } from "../services/api";
 import { Modal, Spinner, EmptyState, Pagination } from "../components/ui";
 import { toast } from "../store/toastStore";
 import { fmt, fmtDateTime } from "../utils/helpers";
+import {
+  FiFileText,
+  FiDollarSign,
+  FiSmartphone,
+  FiCamera,
+  FiEye,
+  FiXCircle,
+  FiDownload,
+  FiX,
+} from "react-icons/fi";
 import useAuthStore from "../store/authStore";
 
 export default function Ventas() {
@@ -115,7 +125,7 @@ export default function Ventas() {
               setDateTo("");
             }}
           >
-            ✕ Limpiar
+            <FiX /> Limpiar
           </button>
         )}
         {sales.length > 0 && (
@@ -131,7 +141,7 @@ export default function Ventas() {
           <Spinner />
         ) : sales.length === 0 ? (
           <EmptyState
-            icon="🧾"
+            icon={<FiFileText />}
             title="No hay ventas"
             description="Las ventas aparecerán aquí una vez que uses la Caja"
           />
@@ -182,7 +192,11 @@ export default function Ventas() {
                         <span
                           className={`badge ${s.payment_method === "efectivo" ? "badge-green" : "badge-blue"}`}
                         >
-                          {s.payment_method === "efectivo" ? "💵" : "📱"}{" "}
+                          {s.payment_method === "efectivo" ? (
+                            <FiDollarSign />
+                          ) : (
+                            <FiSmartphone />
+                          )}{" "}
                           {s.payment_method}
                         </span>
                         {s.sinpe_photo && (
@@ -190,7 +204,7 @@ export default function Ventas() {
                             title="Tiene foto de comprobante"
                             style={{ fontSize: 14 }}
                           >
-                            📷
+                            <FiCamera />
                           </span>
                         )}
                       </div>
@@ -212,7 +226,7 @@ export default function Ventas() {
                           onClick={() => setDetail(s)}
                           title="Ver detalle"
                         >
-                          👁️
+                          <FiEye />
                         </button>
                         {isAdmin() && s.status === "completada" && (
                           <button
@@ -220,7 +234,7 @@ export default function Ventas() {
                             onClick={() => setConfirm(s.id)}
                             title="Anular"
                           >
-                            🚫
+                            <FiXCircle />
                           </button>
                         )}
                       </div>
@@ -255,9 +269,15 @@ export default function Ventas() {
                 ["Total", fmt(detail.total)],
                 [
                   "Método",
-                  detail.payment_method === "sinpe"
-                    ? "📱 SINPE"
-                    : "💵 Efectivo",
+                  detail.payment_method === "sinpe" ? (
+                    <>
+                      <FiSmartphone /> SINPE
+                    </>
+                  ) : (
+                    <>
+                      <FiDollarSign /> Efectivo
+                    </>
+                  ),
                 ],
                 detail.payment_method === "efectivo" && detail.change_given
                   ? ["Cambio", fmt(detail.change_given)]
@@ -307,7 +327,7 @@ export default function Ventas() {
                     marginBottom: 8,
                   }}
                 >
-                  📷 Comprobante SINPE
+                  <FiCamera /> Comprobante SINPE
                 </div>
                 <img
                   src={detail.sinpe_photo}
@@ -342,7 +362,7 @@ export default function Ventas() {
                       fontWeight: 600,
                     }}
                   >
-                    ⬇️ Descargar
+                    <FiDownload /> Descargar
                   </a>
                 </div>
               </div>
@@ -386,7 +406,7 @@ export default function Ventas() {
                     setConfirm(detail.id);
                   }}
                 >
-                  🚫 Anular Venta
+                  <FiXCircle /> Anular Venta
                 </button>
               )}
             </div>
@@ -398,7 +418,11 @@ export default function Ventas() {
       <Modal
         open={!!photoModal}
         onClose={() => setPhotoModal(null)}
-        title="📷 Comprobante SINPE"
+        title={
+          <>
+            <FiCamera /> Comprobante SINPE
+          </>
+        }
         maxWidth={640}
       >
         {photoModal && (
@@ -419,7 +443,7 @@ export default function Ventas() {
                 download="comprobante-sinpe.jpg"
                 className="btn btn-ghost"
               >
-                ⬇️ Descargar
+                <FiDownload /> Descargar
               </a>
               <button
                 className="btn btn-accent"
@@ -437,7 +461,11 @@ export default function Ventas() {
         <Modal
           open
           onClose={() => setConfirm(null)}
-          title="🚫 Anular Venta"
+          title={
+            <>
+              <FiXCircle /> Anular Venta
+            </>
+          }
           maxWidth={400}
         >
           <div
@@ -460,7 +488,7 @@ export default function Ventas() {
               Cancelar
             </button>
             <button className="btn btn-danger" onClick={() => cancel(confirm)}>
-              🚫 Anular
+              <FiXCircle /> Anular
             </button>
           </div>
         </Modal>
