@@ -45,7 +45,7 @@ const chartOpts = {
   maintainAspectRatio: false,
   plugins: { legend: { position: "top" } },
   scales: {
-    y: { beginAtZero: true, grid: { color: "#f5f0e8" } },
+    y: { beginAtZero: true, grid: { color: "#cef4ff" } },
     x: { grid: { display: false } },
   },
 };
@@ -239,11 +239,11 @@ export default function Reportes() {
                       label: "Ventas (₡)",
                       data: salesTotals,
                       fill: true,
-                      borderColor: "#c8570a",
-                      backgroundColor: "#c8570a18",
+                      borderColor: "#0ea5e9",
+                      backgroundColor: "#0ea5e918",
                       tension: 0.4,
                       pointRadius: 4,
-                      pointBackgroundColor: "#c8570a",
+                      pointBackgroundColor: "#0ea5e9",
                     },
                   ],
                 }}
@@ -340,8 +340,8 @@ export default function Reportes() {
                   {
                     label: "Unidades vendidas",
                     data: topProds.map((p) => p.total_quantity),
-                    backgroundColor: "#c8570acc",
-                    borderColor: "#c8570a",
+                    backgroundColor: "#0ea5e9cc",
+                    borderColor: "#0ea5e9",
                     borderWidth: 2,
                     borderRadius: 6,
                   },
