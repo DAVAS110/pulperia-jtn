@@ -40,7 +40,7 @@ export function InstallBanner() {
           bottom: 20,
           left: "50%",
           transform: "translateX(-50%)",
-          background: "linear-gradient(135deg, #1a0e04, #2d1507)",
+          background: "linear-gradient(135deg, #0284c7, #0ea5e9)",
           color: "white",
           borderRadius: 16,
           padding: "14px 20px",
@@ -88,7 +88,7 @@ export function InstallBanner() {
           <button
             onClick={install}
             style={{
-              background: "#c8570a",
+              background: "#0ea5e9",
               border: "none",
               color: "white",
               borderRadius: 8,
@@ -141,7 +141,7 @@ export function InstallBanner() {
                 <FiHome /> Instalar en iPhone
               </>
             </div>
-            <p style={{ fontSize: 13.5, color: "#6b5c42", marginBottom: 20 }}>
+            <p style={{ fontSize: 13.5, color: "#0c4a6e", marginBottom: 20 }}>
               Sigue estos pasos para agregar Pulperia JTN a tu pantalla de
               inicio:
             </p>
@@ -197,7 +197,7 @@ export function InstallBanner() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{title}</div>
-                  <div style={{ fontSize: 12, color: "#a8937a" }}>{desc}</div>
+                  <div style={{ fontSize: 12, color: "#0284c7" }}>{desc}</div>
                 </div>
               </div>
             ))}
@@ -206,7 +206,7 @@ export function InstallBanner() {
               style={{
                 width: "100%",
                 padding: 13,
-                background: "#c8570a",
+                background: "#0ea5e9",
                 color: "white",
                 border: "none",
                 borderRadius: 10,
