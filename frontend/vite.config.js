@@ -7,21 +7,60 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/*.png", "icons/*.svg"],
+      includeAssets: [
+        "icons/*.png",
+        "icons/*.svg",
+        "icons/**/*",
+        "manifest.webmanifest",
+      ],
       workbox: {
         // Cachear todos los assets del frontend
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
+        // Ignora ciertos archivos
+        globIgnores: ["**/node_modules/**/*", "**/.*/**/*"],
         // Cachear llamadas a la API para funcionar offline
         runtimeCaching: [
+          // APIs: Network First con fallback a caché
           {
-            urlPattern: /^https?.*(\/api\/products|\/api\/categories)/,
-            handler: "StaleWhileRevalidate",
+            urlPattern:
+              /^https?:\/\/.*\/api\/(products|categories|sales|reports|inventory|combos|dailyReport|treasury)/,
+            handler: "NetworkFirst",
             options: {
               cacheName: "api-cache",
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 }, // 24h
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 24 horas
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          // Imágenes: Cache First
+          {
+            urlPattern: /\.(?:png|gif|jpg|jpeg|svg)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images-cache",
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 días
+              },
+            },
+          },
+          // Fuentes: Cache First
+          {
+            urlPattern: /\.woff2?$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fonts-cache",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 año
+              },
             },
           },
         ],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
       },
       manifest: {
         name: "Pulperia JTN",

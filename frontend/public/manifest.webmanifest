@@ -1,0 +1,139 @@
+{
+  "name": "Pulperia JTN - Sistema de Gestión",
+  "short_name": "Pulpería JTN",
+  "description": "Sistema completo de gestión de inventario, ventas y reportes para pulpería",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#c8570a",
+  "background_color": "#faf7f2",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+
+  "screenshots": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+
+  "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name": "Caja / POS",
+      "short_name": "Caja",
+      "description": "Accede rápidamente a la caja y punto de venta",
+      "url": "/caja?utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "short_name": "Productos",
+      "description": "Gestiona tu inventario de productos",
+      "url": "/productos?utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "short_name": "Reportes",
+      "description": "Visualiza reportes y análisis",
+      "url": "/reportes?utm_source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "image",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  }
+}

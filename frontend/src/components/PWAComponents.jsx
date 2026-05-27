@@ -353,3 +353,75 @@ export function NotificationButton() {
     </button>
   );
 }
+
+// ─── Prompt de actualización disponible ──────────────────
+export function UpdatePrompt() {
+  const { needRefresh, updateServiceWorker } = usePWA();
+  if (!needRefresh[0]) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 100,
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "linear-gradient(135deg, #10b981, #059669)",
+        color: "white",
+        borderRadius: 12,
+        padding: "14px 20px",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+        zIndex: 998,
+        maxWidth: 420,
+        width: "calc(100% - 40px)",
+        animation: "slideUp 0.3s ease",
+      }}
+    >
+      <span style={{ fontSize: 24, flexShrink: 0 }}>
+        <FiRefreshCw />
+      </span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 700, fontSize: 14 }}>
+          Actualización disponible
+        </div>
+        <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+          Se ha instalado una nueva versión de la app
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: "rgba(255,255,255,0.1)",
+            border: "none",
+            color: "white",
+            borderRadius: 8,
+            padding: "7px 12px",
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Luego
+        </button>
+        <button
+          onClick={() => updateServiceWorker(true)}
+          style={{
+            background: "#ffffff",
+            border: "none",
+            color: "#059669",
+            borderRadius: 8,
+            padding: "7px 14px",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: 13,
+          }}
+        >
+          Actualizar ahora
+        </button>
+      </div>
+    </div>
+  );
+}

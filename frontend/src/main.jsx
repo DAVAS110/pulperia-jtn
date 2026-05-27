@@ -18,6 +18,7 @@ import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
 import Combos from "./pages/Combos";
 import { useKeepAlive } from "./hooks/useKeepAlive";
+import { InstallBanner, UpdatePrompt } from "./components/PWAComponents";
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore();
@@ -35,6 +36,10 @@ function App() {
   return (
     <BrowserRouter>
       <AppWithKeepAlive>
+        {/* Componentes PWA */}
+        <InstallBanner />
+        <UpdatePrompt />
+
         <ToastContainer />
         <Routes>
           <Route
