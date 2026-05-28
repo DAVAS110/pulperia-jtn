@@ -417,7 +417,7 @@ h3 {
   transform: none !important;
 }
 .btn-icon {
-  background: var(--surface2);
+  background: var(--accent);
   border: none;
   border-radius: 7px;
   width: 32px;
@@ -783,7 +783,7 @@ td {
   height: 24px;
   border-radius: 6px;
   border: none;
-  background: var(--border);
+  background: var(--accent);
   cursor: pointer;
   font-size: 14px;
   display: flex;
