@@ -730,39 +730,39 @@ export default function Caja() {
               </div>
             ))
           )}
-        </div>
-        <div className="cart-footer">
-          <div className="cart-total">
-            <span className="cart-total-label">TOTAL</span>
-            <span className="cart-total-value">{fmt(total)}</span>
-          </div>
-          <button
-            className="btn btn-accent"
-            style={{
-              width: "100%",
-              padding: 14,
-              fontSize: 15,
-              justifyContent: "center",
-            }}
-            onClick={openPayModal}
-            disabled={!cart.length}
-          >
-            <FiCreditCard /> Cobrar
-          </button>
-          {cart.length > 0 && (
+          <div className="cart-footer">
+            <div className="cart-total">
+              <span className="cart-total-label">TOTAL</span>
+              <span className="cart-total-value">{fmt(total)}</span>
+            </div>
             <button
-              className="btn btn-ghost"
+              className="btn btn-accent"
               style={{
                 width: "100%",
-                marginTop: 8,
-                fontSize: 12,
+                padding: 14,
+                fontSize: 15,
                 justifyContent: "center",
               }}
-              onClick={() => setCart([])}
+              onClick={openPayModal}
+              disabled={!cart.length}
             >
-              <FiTrash2 /> Limpiar carrito
+              <FiCreditCard /> Cobrar
             </button>
-          )}
+            {cart.length > 0 && (
+              <button
+                className="btn btn-ghost"
+                style={{
+                  width: "100%",
+                  marginTop: 8,
+                  fontSize: 12,
+                  justifyContent: "center",
+                }}
+                onClick={() => setCart([])}
+              >
+                <FiTrash2 /> Limpiar carrito
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
