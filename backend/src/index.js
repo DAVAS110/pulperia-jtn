@@ -1,7 +1,10 @@
 require("dotenv").config();
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
+const { Server } = require("socket.io");
 const routes = require("./routes");
+const { setIO } = require("./socket");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,7 +36,26 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Error interno del servidor" });
 });
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+setIO(io);
+
+io.on("connection", (socket) => {
+  console.log(`🔌 Cliente conectado: ${socket.id}`);
+
+  socket.on("disconnect", () => {
+    console.log(`❌ Cliente desconectado: ${socket.id}`);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`✅ Pulperia JTN API corriendo en puerto ${PORT}`);
   console.log(`   Entorno: ${process.env.NODE_ENV || "development"}`);
 });

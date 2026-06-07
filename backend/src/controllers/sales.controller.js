@@ -1,4 +1,5 @@
 const { pool } = require("../config/database");
+const { getIO } = require("../socket");
 
 // GET /api/sales
 const list = async (req, res) => {
@@ -133,9 +134,15 @@ const create = async (req, res) => {
         // Check stock for each product in combo
         for (const prod of combo.products) {
           const needed = prod.quantity * qty;
-          if (prod.stock < needed)
+          // Lock the product row to avoid race conditions
+          const prodLockRes = await client.query(
+            "SELECT stock FROM products WHERE id = $1 FOR UPDATE",
+            [prod.product_id],
+          );
+          const currentStock = prodLockRes.rows[0]?.stock ?? 0;
+          if (currentStock < needed)
             throw new Error(
-              `Stock insuficiente de "${prod.product_name}" para el combo "${combo.name}". Disponible: ${prod.stock}`,
+              `Stock insuficiente de "${prod.product_name}" para el combo "${combo.name}". Disponible: ${currentStock}`,
             );
         }
 
@@ -255,6 +262,14 @@ const create = async (req, res) => {
 
     await client.query("COMMIT");
 
+    const io = getIO();
+    if (io) {
+      io.emit("inventory-updated", {
+        type: "sale",
+        saleId: sale.id,
+      });
+    }
+
     // Return full sale including sinpe_photo
     const fullSale = await pool.query(
       `
@@ -334,6 +349,15 @@ const cancel = async (req, res) => {
     );
 
     await client.query("COMMIT");
+
+    const io = getIO();
+    if (io) {
+      io.emit("inventory-updated", {
+        type: "sale_cancellation",
+        saleId: req.params.id,
+      });
+    }
+
     res.json({ message: "Venta anulada correctamente" });
   } catch (err) {
     await client.query("ROLLBACK");

@@ -5,6 +5,7 @@ import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
 import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
 import { compressImage, formatBytes, base64Size } from "../utils/imageUtils";
+import { io } from "socket.io-client";
 import {
   FiGift,
   FiSearch,
@@ -62,6 +63,65 @@ export default function Caja() {
     loadProducts();
     loadCombos();
   }, [loadProducts, loadCombos]);
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const socketBaseUrl = apiUrl
+      ? new URL(apiUrl, window.location.origin).origin
+      : window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+      ? "http://localhost:3001"
+      : window.location.origin;
+
+    const socket = io(socketBaseUrl, {
+      transports: ["websocket"],
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket conectado", socket.id);
+    });
+
+    socket.on("inventory-updated", ({ type }) => {
+      loadProducts();
+      loadCombos();
+      if (!processing) {
+        toast.info("Inventario actualizado en otro dispositivo");
+      }
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("Socket desconectado", reason);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [loadProducts, loadCombos, processing]);
+
+  // Cargar carrito desde localStorage al montar (persistencia entre recargas)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("cart");
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved) && saved.length) {
+        // Normalizar y restaurar
+        const normalized = saved.map((it) => ({ ...it }));
+        setCart(normalized);
+      }
+    } catch (e) {
+      console.warn("Error cargando carrito desde localStorage", e);
+    }
+  }, []);
+
+  // Guardar carrito en localStorage cada vez que cambie (opción de bajo costo)
+  useEffect(() => {
+    try {
+      localStorage.setItem("cart", JSON.stringify(cart || []));
+    } catch (e) {
+      console.warn("No se pudo guardar el carrito", e);
+    }
+  }, [cart]);
 
   // Refresca el stock al volver a la pestaña
   useVisibilityRefresh(() => {
@@ -297,18 +357,17 @@ export default function Caja() {
         received_by: receivedBy.trim() || null,
       });
       setLastSale(data.sale);
+      // Refrescar productos y combos desde el servidor para evitar inconsistencias
+      await loadProducts();
+      await loadCombos();
+      // Limpiar carrito local y storage
       setCart([]);
+      try {
+        localStorage.removeItem("cart");
+      } catch {}
       setPayModal(false);
       setReceiptModal(true);
       setCashReceived("");
-      setProducts((prev) =>
-        prev
-          .map((p) => {
-            const item = cart.find((i) => i.product_id === p.id);
-            return item ? { ...p, stock: p.stock - item.quantity } : p;
-          })
-          .filter((p) => p.stock > 0),
-      );
       toast.success("Venta registrada");
     } catch (err) {
       toast.error(err.response?.data?.error || "Error al registrar venta");
@@ -651,84 +710,80 @@ export default function Caja() {
               <p style={{ fontSize: 13 }}>Toca un producto para agregarlo</p>
             </div>
           ) : (
-            cart.map((item) => (
-              <div key={item.product_id ?? item.combo_id} className="cart-item">
+            <div className="cart-items">
+              {cart.map((item) => (
                 <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 7,
-                    background: "var(--surface2)",
-                    border: "1px solid var(--border)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 16,
-                    overflow: "hidden",
-                    flexShrink: 0,
-                  }}
+                  key={item.product_id ?? item.combo_id}
+                  className="cart-item"
                 >
-                  {item.image_url ? (
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <FiBox />
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
-                    className="cart-item-name"
                     style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 7,
+                      background: "var(--surface2)",
+                      border: "1px solid var(--border)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 16,
                       overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
-                    {item.name}
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <FiBox />
+                    )}
                   </div>
-                  <div className="cart-item-price">{fmt(item.price)} c/u</div>
-                </div>
-                <div className="qty-controls">
-                  <button
-                    className="qty-btn"
-                    onClick={() => updateQty(item.product_id, -1)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="cart-item-name">{item.name}</div>
+                    <div className="cart-item-price">{fmt(item.price)} c/u</div>
+                  </div>
+                  <div className="qty-controls">
+                    <button
+                      className="qty-btn"
+                      onClick={() => updateQty(item.product_id, -1)}
+                    >
+                      −
+                    </button>
+                    <span className="qty-display">{item.quantity}</span>
+                    <button
+                      className="qty-btn"
+                      onClick={() => updateQty(item.product_id, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 13,
+                      minWidth: 64,
+                      textAlign: "right",
+                    }}
                   >
-                    −
-                  </button>
-                  <span className="qty-display">{item.quantity}</span>
+                    {fmt(item.price * item.quantity)}
+                  </div>
                   <button
-                    className="qty-btn"
-                    onClick={() => updateQty(item.product_id, 1)}
+                    className="btn-icon"
+                    style={{ fontSize: 12, width: 26, height: 26 }}
+                    onClick={() => removeFromCart(item.product_id)}
                   >
-                    +
+                    <FiX />
                   </button>
                 </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 13,
-                    minWidth: 64,
-                    textAlign: "right",
-                  }}
-                >
-                  {fmt(item.price * item.quantity)}
-                </div>
-                <button
-                  className="btn-icon"
-                  style={{ fontSize: 12, width: 26, height: 26 }}
-                  onClick={() => removeFromCart(item.product_id)}
-                >
-                  <FiX />
-                </button>
-              </div>
-            ))
+              ))}
+            </div>
           )}
           <div className="cart-footer">
             <div className="cart-total">
