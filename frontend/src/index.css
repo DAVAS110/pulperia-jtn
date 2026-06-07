@@ -385,6 +385,114 @@ h3 {
   gap: 16px;
   padding: 20px;
 }
+.totals-history {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 20px 20px;
+  margin-top: 14px;
+}
+.totals-history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow);
+}
+.totals-history-item span {
+  font-size: 12px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.totals-history-item strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+.history-header {
+  align-items: center;
+  gap: 16px;
+}
+.history-filter-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 5px;
+}
+.history-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  background: transparent;
+  transition: var(--transition);
+}
+.history-filter-button.active {
+  background: white;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.history-filter-button:hover {
+  color: var(--text);
+}
+.totals-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 0 20px 20px;
+}
+.history-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text2);
+}
+.history-table {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.history-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.history-row:last-child {
+  border-bottom: none;
+}
+.history-row-headings {
+  background: var(--surface2);
+  color: var(--text3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.history-row strong {
+  color: var(--text);
+}
+.history-row-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  justify-content: center;
+  color: var(--text3);
+}
 .totals-card {
   background: var(--surface);
   border: 1px solid var(--border);

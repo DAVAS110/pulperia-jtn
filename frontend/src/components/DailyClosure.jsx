@@ -82,6 +82,21 @@ export default function DailyClosure() {
     setData(null);
   };
 
+  const getTreasuryBalance = (type) =>
+    parseFloat(data?.treasury?.find((t) => t.type === type)?.balance ?? 0);
+
+  const getSalesByMethod = (method) =>
+    parseFloat(
+      data?.sales_by_method?.find((s) => s.payment_method === method)?.total ?? 0,
+    );
+
+  const totalCashSales = getSalesByMethod("efectivo");
+  const totalSinpeSales = getSalesByMethod("sinpe");
+  const totalCash = getTreasuryBalance("caja");
+  const totalSinpe = getTreasuryBalance("sinpe");
+  const totalInventoryMovements = data?.movements?.length ?? 0;
+  const lowStockCount = data?.low_stock?.length ?? 0;
+
   // ── PDF generation ────────────────────────────────────────
   const generatePDF = () => {
     if (!data || !window.jspdf) {
@@ -690,47 +705,164 @@ export default function DailyClosure() {
                   {data.total_count} transacciones
                 </div>
               </div>
-              {(data.treasury || []).map((t) => (
+
+              <div
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                }}
+              >
                 <div
-                  key={t.type}
                   style={{
-                    background: "var(--green-light)",
-                    borderRadius: 10,
-                    padding: "12px 14px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text3)",
+                    marginBottom: 2,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "var(--green)",
-                      marginBottom: 2,
-                    }}
-                  >
-                    {t.type === "caja" ? (
-                      <>
-                        <FiDollarSign /> CAJA
-                      </>
-                    ) : (
-                      <>
-                        <FiSmartphone /> SINPE
-                      </>
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 20,
-                      color: "var(--green)",
-                    }}
-                  >
-                    {fmt(t.balance)}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                    Saldo actual
-                  </div>
+                  Ventas efectivo
                 </div>
-              ))}
+                <div
+                  style={{
+                    fontWeight: 800,
+                    fontSize: 20,
+                    color: "var(--green)",
+                  }}
+                >
+                  {fmt(totalCashSales)}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  {data.sales_by_method?.find((s) => s.payment_method === "efectivo")?.count ?? 0} ventas
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text3)",
+                    marginBottom: 2,
+                  }}
+                >
+                  Ventas SINPE
+                </div>
+                <div
+                  style={{
+                    fontWeight: 800,
+                    fontSize: 20,
+                    color: "var(--blue)",
+                  }}
+                >
+                  {fmt(totalSinpeSales)}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  {data.sales_by_method?.find((s) => s.payment_method === "sinpe")?.count ?? 0} ventas
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--green-light)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--green)",
+                    marginBottom: 2,
+                  }}
+                >
+                  <FiDollarSign /> CAJA
+                </div>
+                <div
+                  style={{
+                    fontWeight: 800,
+                    fontSize: 20,
+                    color: "var(--green)",
+                  }}
+                >
+                  {fmt(totalCash)}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  Saldo actual
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--blue-light)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--blue)",
+                    marginBottom: 2,
+                  }}
+                >
+                  <FiSmartphone /> SINPE
+                </div>
+                <div
+                  style={{
+                    fontWeight: 800,
+                    fontSize: 20,
+                    color: "var(--blue)",
+                  }}
+                >
+                  {fmt(totalSinpe)}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  Saldo actual
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text3)",
+                    marginBottom: 2,
+                  }}
+                >
+                  Movimientos inventario
+                </div>
+                <div
+                  style={{
+                    fontWeight: 800,
+                    fontSize: 20,
+                    color: "var(--text)",
+                  }}
+                >
+                  {totalInventoryMovements}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  Registrados hoy
+                </div>
+              </div>
             </div>
 
             {/* Alerta bajo stock */}

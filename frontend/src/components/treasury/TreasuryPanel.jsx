@@ -111,14 +111,26 @@ export default function TreasuryPanel() {
   const balanceCaja = data?.caja?.balance ?? 0;
   const balanceSinpe = data?.sinpe?.balance ?? 0;
   const totalBalance = balanceCaja + balanceSinpe;
-  const totalInMonth = (data?.monthly_totals || []).reduce(
-    (sum, row) => sum + parseFloat(row.total_in || 0),
-    0,
-  );
   const totalOutMonth = (data?.monthly_totals || []).reduce(
     (sum, row) => sum + parseFloat(row.total_out || 0),
     0,
   );
+  const monthlySales = data?.monthly_sales ?? 0;
+  const monthlyOutflows = data?.monthly_outflows ?? 0;
+  const monthlyHistory = data?.monthly_history || [];
+
+  const sortedMonthlyHistory = [...monthlyHistory].sort(
+    (a, b) => new Date(b.month_start) - new Date(a.month_start),
+  );
+  let runningBalance = totalBalance;
+  const monthlyHistoryRows = sortedMonthlyHistory.map((row) => {
+    const rowWithBalance = {
+      ...row,
+      balance_end: runningBalance,
+    };
+    runningBalance -= row.net_change;
+    return rowWithBalance;
+  });
 
   const monthly = (type, dir) => {
     const row = (data?.monthly_totals || []).find(
@@ -160,24 +172,49 @@ export default function TreasuryPanel() {
         <div className="totals-grid">
           <div className="totals-card totals-card-primary">
             <div className="totals-card-header">
-              <FiDollarSign /> Saldo Total
+              <FiDollarSign /> Saldo total al cierre del mes
             </div>
             <div className="totals-value">{loading ? "…" : fmt(totalBalance)}</div>
             <div className="totals-meta">Caja + SINPE</div>
           </div>
           <div className="totals-card totals-card-in">
             <div className="totals-card-header">
-              <FiTrendingUp /> Entradas Mes
+              <FiTrendingUp /> Ventas del mes
             </div>
-            <div className="totals-value">{loading ? "…" : fmt(totalInMonth)}</div>
-            <div className="totals-meta">Flujo entrante en el mes</div>
+            <div className="totals-value">{loading ? "…" : fmt(monthlySales)}</div>
+            <div className="totals-meta">Solo ventas registradas</div>
           </div>
           <div className="totals-card totals-card-out">
             <div className="totals-card-header">
-              <FiTrendingDown /> Salidas Mes
+              <FiTrendingDown /> Salidas del mes
             </div>
-            <div className="totals-value">{loading ? "…" : fmt(totalOutMonth)}</div>
+            <div className="totals-value">{loading ? "…" : fmt(monthlyOutflows)}</div>
             <div className="totals-meta">Gastos y retiros del mes</div>
+          </div>
+        </div>
+        <div className="totals-history">
+          <div className="history-title">Historial mensual</div>
+          <div className="history-table">
+            <div className="history-row history-row-headings">
+              <span>Mes</span>
+              <span>Saldo cierre</span>
+              <span>Ventas</span>
+              <span>Salidas</span>
+            </div>
+            {monthlyHistoryRows.length === 0 ? (
+              <div className="history-row history-row-empty">
+                No hay datos mensuales aún
+              </div>
+            ) : (
+              monthlyHistoryRows.map((row) => (
+                <div className="history-row" key={row.month_label}>
+                  <span>{row.month_label}</span>
+                  <strong>{fmt(row.balance_end)}</strong>
+                  <span>{fmt(row.sales)}</span>
+                  <span>{fmt(row.outflows)}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -388,18 +425,9 @@ export default function TreasuryPanel() {
 
       {/* ── Movement history ── */}
       <div className="card">
-        <div className="card-header">
+        <div className="card-header history-header">
           <h3>Historial de Movimientos</h3>
-          {/* Filter tabs */}
-          <div
-            style={{
-              display: "flex",
-              gap: 4,
-              background: "var(--surface2)",
-              borderRadius: 8,
-              padding: 3,
-            }}
-          >
+          <div className="history-filter-tabs">
             {[
               ["all", "Todos"],
               [
@@ -421,19 +449,7 @@ export default function TreasuryPanel() {
                   setHistTab(v);
                   setMovPage(1);
                 }}
-                style={{
-                  padding: "5px 12px",
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: "Sora,sans-serif",
-                  background: histTab === v ? "white" : "transparent",
-                  color: histTab === v ? "var(--text)" : "var(--text3)",
-                  boxShadow: histTab === v ? "var(--shadow)" : "none",
-                  transition: "all 0.15s",
-                }}
+                className={`history-filter-button ${histTab === v ? "active" : ""}`}
               >
                 {l}
               </button>

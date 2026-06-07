@@ -3,7 +3,7 @@ const { pool } = require('../config/database');
 // GET /api/treasury — saldos actuales + resumen
 const getSummary = async (req, res) => {
   try {
-    const [accountsRes, recentRes, totalsRes] = await Promise.all([
+    const [accountsRes, recentRes, totalsRes, summaryRes, historyRes] = await Promise.all([
       pool.query('SELECT * FROM treasury_accounts ORDER BY type'),
       pool.query(`
         SELECT tm.*, u.name AS user_name
@@ -19,17 +19,46 @@ const getSummary = async (req, res) => {
         FROM treasury_movements
         WHERE created_at >= DATE_TRUNC('month', NOW())
         GROUP BY account_type
-      `)
+      `),
+      pool.query(`
+        SELECT
+          SUM(CASE WHEN direction='entrada' AND category = 'venta' THEN amount ELSE 0 END) AS monthly_sales,
+          SUM(CASE WHEN direction='salida' THEN amount ELSE 0 END) AS monthly_outflows
+        FROM treasury_movements
+        WHERE created_at >= DATE_TRUNC('month', NOW())
+      `),
+      pool.query(`
+        SELECT
+          date_trunc('month', created_at) AS month_start,
+          to_char(date_trunc('month', created_at), 'Mon YYYY') AS month_label,
+          SUM(CASE WHEN direction='entrada' AND category = 'venta' THEN amount ELSE 0 END) AS sales,
+          SUM(CASE WHEN direction='salida' THEN amount ELSE 0 END) AS outflows,
+          SUM(CASE WHEN direction='entrada' THEN amount ELSE -amount END) AS net_change
+        FROM treasury_movements
+        WHERE created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '5 months'
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `),
     ]);
 
     const caja  = accountsRes.rows.find(a => a.type === 'caja')  || { balance: 0 };
     const sinpe = accountsRes.rows.find(a => a.type === 'sinpe') || { balance: 0 };
+    const summaryRow = summaryRes.rows[0] || { monthly_sales: 0, monthly_outflows: 0 };
 
     res.json({
       caja:  { balance: parseFloat(caja.balance) },
       sinpe: { balance: parseFloat(sinpe.balance) },
       recent_movements: recentRes.rows,
       monthly_totals: totalsRes.rows,
+      monthly_sales: parseFloat(summaryRow.monthly_sales) || 0,
+      monthly_outflows: parseFloat(summaryRow.monthly_outflows) || 0,
+      monthly_history: historyRes.rows.map((row) => ({
+        month_start: row.month_start,
+        month_label: row.month_label,
+        sales: parseFloat(row.sales) || 0,
+        outflows: parseFloat(row.outflows) || 0,
+        net_change: parseFloat(row.net_change) || 0,
+      })),
     });
   } catch (err) {
     console.error(err);
