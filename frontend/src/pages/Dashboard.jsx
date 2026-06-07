@@ -89,10 +89,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div
-        className="dashboard-grid"
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
-      >
+      <div className="dashboard-grid">
         <div className="card">
           <div className="card-header">
             <h3>Actividad Reciente</h3>
@@ -179,14 +176,7 @@ export default function Dashboard() {
             <div className="card-header">
               <h3>Acciones Rápidas</h3>
             </div>
-            <div
-              className="card-body"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 10,
-              }}
-            >
+            <div className="card-body quick-actions">
               {[
                 { icon: <FiShoppingCart />, label: "Nueva Venta", to: "/caja" },
                 {
@@ -207,13 +197,8 @@ export default function Dashboard() {
               ].map((a) => (
                 <button
                   key={a.to}
-                  className="btn btn-ghost"
+                  className="btn btn-ghost quick-action-button"
                   onClick={() => navigate(a.to)}
-                  style={{
-                    justifyContent: "flex-start",
-                    padding: "12px 14px",
-                    borderRadius: 10,
-                  }}
                 >
                   <span style={{ fontSize: 20 }}>{a.icon}</span>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>

@@ -3,7 +3,7 @@ import { treasuryAPI } from "../../services/api";
 import { Modal } from "../ui";
 import { toast } from "../../store/toastStore";
 import { fmt, fmtDateTime } from "../../utils/helpers";
-import { FiDollarSign, FiSmartphone } from "react-icons/fi";
+import { FiDollarSign, FiSmartphone, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import useAuthStore from "../../store/authStore";
 
 const WITHDRAW_CATEGORIES = [
@@ -110,6 +110,15 @@ export default function TreasuryPanel() {
 
   const balanceCaja = data?.caja?.balance ?? 0;
   const balanceSinpe = data?.sinpe?.balance ?? 0;
+  const totalBalance = balanceCaja + balanceSinpe;
+  const totalInMonth = (data?.monthly_totals || []).reduce(
+    (sum, row) => sum + parseFloat(row.total_in || 0),
+    0,
+  );
+  const totalOutMonth = (data?.monthly_totals || []).reduce(
+    (sum, row) => sum + parseFloat(row.total_out || 0),
+    0,
+  );
 
   const monthly = (type, dir) => {
     const row = (data?.monthly_totals || []).find(
@@ -136,6 +145,40 @@ export default function TreasuryPanel() {
           <p style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>
             Caja física y cuenta SINPE
           </p>
+        </div>
+      </div>
+
+      {/* ── Totals box ── */}
+      <div className="card totals-summary" style={{ marginBottom: 24 }}>
+        <div className="totals-summary-header">
+          <div>
+            <div className="totals-overline">Resumen de Totales</div>
+            <h3 className="totals-headline">Tesorería en un vistazo</h3>
+          </div>
+          <span className="badge badge-blue">Actualizado</span>
+        </div>
+        <div className="totals-grid">
+          <div className="totals-card totals-card-primary">
+            <div className="totals-card-header">
+              <FiDollarSign /> Saldo Total
+            </div>
+            <div className="totals-value">{loading ? "…" : fmt(totalBalance)}</div>
+            <div className="totals-meta">Caja + SINPE</div>
+          </div>
+          <div className="totals-card totals-card-in">
+            <div className="totals-card-header">
+              <FiTrendingUp /> Entradas Mes
+            </div>
+            <div className="totals-value">{loading ? "…" : fmt(totalInMonth)}</div>
+            <div className="totals-meta">Flujo entrante en el mes</div>
+          </div>
+          <div className="totals-card totals-card-out">
+            <div className="totals-card-header">
+              <FiTrendingDown /> Salidas Mes
+            </div>
+            <div className="totals-value">{loading ? "…" : fmt(totalOutMonth)}</div>
+            <div className="totals-meta">Gastos y retiros del mes</div>
+          </div>
         </div>
       </div>
 
