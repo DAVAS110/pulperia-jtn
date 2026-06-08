@@ -210,7 +210,7 @@ export default function Dashboard() {
           </div>
 
           {!loading && data?.low_stock_count > 0 && (
-            <div className="card" style={{ border: "1.5px solid #f5c6c3" }}>
+            <div className="card" style={{ border: "1.5px solid var(--danger-border)" }}>
               <div
                 className="card-header"
                 style={{ background: "var(--red-light)" }}

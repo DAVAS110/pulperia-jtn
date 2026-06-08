@@ -870,7 +870,7 @@ export default function DailyClosure() {
               <div
                 style={{
                   background: "var(--red-light)",
-                  border: "1px solid #f5c6c3",
+                  border: "1px solid var(--danger-border)",
                   borderRadius: 10,
                   padding: "10px 14px",
                   marginBottom: 14,

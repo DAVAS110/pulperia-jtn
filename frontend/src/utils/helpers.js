@@ -40,21 +40,21 @@ export const MOVEMENT_LABELS = {
   venta: "Venta",
 };
 export const MOVEMENT_COLORS = {
-  entrada: "#2d7a4f",
-  salida: "#c0392b",
-  ajuste: "#1a5fa8",
-  pérdida: "#b45309",
-  venta: "#9b59b6",
+  entrada: "var(--green)",
+  salida: "var(--red)",
+  ajuste: "var(--blue)",
+  pérdida: "var(--yellow)",
+  venta: "var(--accent2, #9b59b6)",
 };
 
 export const PALETTE = [
-  "#e74c3c",
-  "#e67e22",
-  "#f39c12",
-  "#2ecc71",
-  "#1abc9c",
-  "#3498db",
-  "#9b59b6",
+  "var(--red)",
+  "var(--yellow)",
+  "var(--yellow)",
+  "var(--green)",
+  "var(--green)",
+  "var(--blue)",
+  "var(--accent2, #9b59b6)",
   "#e91e63",
   "#795548",
   "#607d8b",

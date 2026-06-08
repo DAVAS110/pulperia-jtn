@@ -471,7 +471,7 @@ export default function Ventas() {
           <div
             style={{
               background: "var(--red-light)",
-              border: "1px solid #f5c6c3",
+              border: "1px solid var(--danger-border)",
               borderRadius: 8,
               padding: "12px 14px",
               marginBottom: 16,

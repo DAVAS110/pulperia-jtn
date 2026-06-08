@@ -613,7 +613,7 @@ export default function TreasuryPanel() {
         <div
           style={{
             background: "var(--red-light)",
-            border: "1px solid #f5c6c3",
+            border: "1px solid var(--danger-border)",
             borderRadius: 10,
             padding: "12px 16px",
             marginBottom: 16,

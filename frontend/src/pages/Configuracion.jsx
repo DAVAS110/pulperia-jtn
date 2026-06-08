@@ -268,7 +268,7 @@ export default function Configuracion() {
                                 background:
                                   u.role === "admin"
                                     ? "linear-gradient(135deg,var(--accent),var(--accent2))"
-                                    : "linear-gradient(135deg,var(--blue),#3b82f6)",
+                                    : "linear-gradient(135deg,var(--blue),var(--blue-dark))",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -567,7 +567,7 @@ export default function Configuracion() {
           <div
             style={{
               background: "var(--red-light)",
-              border: "1px solid #f5c6c3",
+              border: "1px solid var(--danger-border)",
               borderRadius: 8,
               padding: "12px 14px",
               marginBottom: 16,

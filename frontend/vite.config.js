@@ -66,7 +66,7 @@ export default defineConfig({
         name: "Pulperia JTN",
         short_name: "Pulpería",
         description: "Sistema de gestión de inventario para pulpería",
-        theme_color: "#c8570a",
+        theme_color: "#0ea5e9",
         background_color: "#faf7f2",
         display: "standalone",
         orientation: "portrait",

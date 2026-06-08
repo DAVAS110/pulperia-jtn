@@ -39,7 +39,7 @@ export default function Alertas() {
             return (
               <div key={p.id} style={{
                 display: 'flex', alignItems: 'center', gap: 16,
-                background: 'var(--red-light)', border: '1px solid #f5c6c3',
+                background: 'var(--red-light)', border: '1px solid var(--danger-border)',
                 borderRadius: 12, padding: '16px 18px'
               }}>
                 <span style={{ fontSize: 28 }}>⚠️</span>

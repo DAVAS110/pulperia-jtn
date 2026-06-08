@@ -40,7 +40,7 @@ export function InstallBanner() {
           bottom: 20,
           left: "50%",
           transform: "translateX(-50%)",
-          background: "linear-gradient(135deg, #0284c7, #0ea5e9)",
+          background: "linear-gradient(135deg, var(--accent2), var(--accent))",
           color: "white",
           borderRadius: 16,
           padding: "14px 20px",
@@ -88,7 +88,7 @@ export function InstallBanner() {
           <button
             onClick={install}
             style={{
-              background: "#0ea5e9",
+              background: "var(--accent)",
               border: "none",
               color: "white",
               borderRadius: 8,
@@ -141,7 +141,13 @@ export function InstallBanner() {
                 <FiHome /> Instalar en iPhone
               </>
             </div>
-            <p style={{ fontSize: 13.5, color: "#0c4a6e", marginBottom: 20 }}>
+            <p
+              style={{
+                fontSize: 13.5,
+                color: "var(--blue-dark)",
+                marginBottom: 20,
+              }}
+            >
               Sigue estos pasos para agregar Pulperia JTN a tu pantalla de
               inicio:
             </p>
@@ -185,7 +191,7 @@ export function InstallBanner() {
                     width: 32,
                     height: 32,
                     borderRadius: "50%",
-                    background: "#fdebd0",
+                    background: "var(--yellow-light)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -197,7 +203,9 @@ export function InstallBanner() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{title}</div>
-                  <div style={{ fontSize: 12, color: "#0284c7" }}>{desc}</div>
+                  <div style={{ fontSize: 12, color: "var(--accent2)" }}>
+                    {desc}
+                  </div>
                 </div>
               </div>
             ))}
@@ -206,7 +214,7 @@ export function InstallBanner() {
               style={{
                 width: "100%",
                 padding: 13,
-                background: "#0ea5e9",
+                background: "var(--accent)",
                 color: "white",
                 border: "none",
                 borderRadius: 10,
@@ -237,7 +245,7 @@ export function UpdateToast() {
         top: 20,
         right: 20,
         zIndex: 998,
-        background: "#1a5fa8",
+        background: "var(--blue-dark)",
         color: "white",
         borderRadius: 12,
         padding: "12px 18px",
@@ -334,14 +342,14 @@ export function NotificationButton() {
       onClick={enable}
       title="Activar notificaciones de bajo stock"
       style={{
-        background: "#fef3c7",
-        border: "1.5px solid #fde68a",
+        background: "var(--yellow-light)",
+        border: "1.5px solid var(--yellow-light)",
         borderRadius: 8,
         padding: "6px 10px",
         cursor: "pointer",
         fontSize: 12,
         fontWeight: 600,
-        color: "#b45309",
+        color: "var(--yellow)",
         display: "flex",
         alignItems: "center",
         gap: 5,
@@ -366,7 +374,7 @@ export function UpdatePrompt() {
         bottom: 100,
         left: "50%",
         transform: "translateX(-50%)",
-        background: "linear-gradient(135deg, #10b981, #059669)",
+        background: "linear-gradient(135deg, var(--green), var(--green-dark))",
         color: "white",
         borderRadius: 12,
         padding: "14px 20px",
@@ -409,9 +417,9 @@ export function UpdatePrompt() {
         <button
           onClick={() => updateServiceWorker(true)}
           style={{
-            background: "#ffffff",
+            background: "var(--accent)",
             border: "none",
-            color: "#059669",
+            color: "white",
             borderRadius: 8,
             padding: "7px 14px",
             cursor: "pointer",

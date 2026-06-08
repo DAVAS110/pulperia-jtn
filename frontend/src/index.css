@@ -13,6 +13,13 @@
   --green-light: #d4eddf;
   --red: #c0392b;
   --red-light: #fde8e6;
+  --red-dark: #a93226;
+  --green-dark: #256040;
+  --blue-dark: #154e8a;
+  --danger-border: #f5c6c3;
+  --sidebar-gradient-start: #022833;
+  --sidebar-gradient-end: #053a47;
+  --auth-gradient-start: #0c4a6e;
   --blue: #0369a1;
   --blue-light: #dbeafe;
   --yellow: #b45309;
@@ -41,6 +48,7 @@ body {
   -webkit-font-smoothing: antialiased;
   /* Respetar safe area en dispositivos iOS en PWA */
   padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
 }
 
 /* ─── SCROLLBAR ─────────────────────────────── */
@@ -75,7 +83,7 @@ h3 {
 /* ─── SIDEBAR ─────────────────────────────── */
 .sidebar {
   width: var(--sidebar-w);
-  background: linear-gradient(180deg, #022833 0%, #053a47 100%);
+  background: linear-gradient(180deg, var(--sidebar-gradient-start) 0%, var(--sidebar-gradient-end) 100%);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -230,7 +238,10 @@ h3 {
 .topbar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 15px 28px;
+  padding-top: calc(15px + env(safe-area-inset-top));
+  padding-right: 28px;
+  padding-bottom: 15px;
+  padding-left: 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -608,21 +619,21 @@ h3 {
   color: white;
 }
 .btn-danger:hover {
-  background: #a93226;
+  background: var(--red-dark);
 }
 .btn-green {
   background: var(--green);
   color: white;
 }
 .btn-green:hover {
-  background: #256040;
+  background: var(--green-dark);
 }
 .btn-blue {
   background: var(--blue);
   color: white;
 }
 .btn-blue:hover {
-  background: #154e8a;
+  background: var(--blue-dark);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -1014,7 +1025,7 @@ td {
   transition: var(--transition);
 }
 .qty-btn:hover {
-  background: #0284c7;
+  background: var(--accent2);
   color: white;
 }
 .qty-display {
@@ -1050,7 +1061,7 @@ td {
   align-items: center;
   gap: 14px;
   background: var(--red-light);
-  border: 1px solid #f5c6c3;
+  border: 1px solid var(--danger-border);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -1091,7 +1102,7 @@ td {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 50%, #0ea5e9 100%);
+  background: linear-gradient(135deg, var(--auth-gradient-start) 0%, var(--accent2) 50%, var(--accent) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -1298,7 +1309,10 @@ td {
     padding: 18px;
   }
   .topbar {
-    padding: 13px 18px;
+    padding-top: calc(13px + env(safe-area-inset-top));
+    padding-right: 18px;
+    padding-bottom: 13px;
+    padding-left: 18px;
   }
 }
 @media (max-width: 600px) {
