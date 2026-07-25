@@ -45,6 +45,12 @@ const salesReport = async (req, res) => {
     const from = date_from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
     const to = date_to || new Date().toISOString().slice(0, 10);
 
+    const rangeDays = (new Date(to) - new Date(from)) / 86400000;
+    if (Number.isNaN(rangeDays) || rangeDays < 0)
+      return res.status(400).json({ error: 'Rango de fechas inválido' });
+    if (rangeDays > 366)
+      return res.status(400).json({ error: 'Rango de fechas muy amplio (máx 366 días)' });
+
     const truncFn = group_by === 'month' ? 'month' : 'day';
 
     const { rows: salesByDate } = await pool.query(`
@@ -81,27 +87,42 @@ const salesReport = async (req, res) => {
   }
 };
 
-// GET /api/reports/inventory
+// GET /api/reports/inventory  (admin only — incluye cost_price)
 const inventoryReport = async (req, res) => {
   try {
-    const { rows: products } = await pool.query(`
-      SELECT p.*, c.name AS category_name, c.color AS category_color,
-             (p.stock <= p.min_stock) AS low_stock,
-             (p.sale_price * p.stock)::numeric AS stock_value,
-             (p.cost_price * p.stock)::numeric AS cost_value
-      FROM products p LEFT JOIN categories c ON c.id = p.category_id
-      WHERE p.is_active = true ORDER BY p.name
-    `);
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const { rows: byCategory } = await pool.query(`
-      SELECT c.name AS category_name, c.color,
-             COUNT(p.id)::int AS product_count,
-             SUM(p.stock * p.sale_price)::numeric AS total_value
-      FROM categories c LEFT JOIN products p ON p.category_id=c.id AND p.is_active=true
-      GROUP BY c.id ORDER BY total_value DESC
-    `);
+    const [productsRes, countRes, byCategoryRes] = await Promise.all([
+      pool.query(
+        `
+        SELECT p.*, c.name AS category_name, c.color AS category_color,
+               (p.stock <= p.min_stock) AS low_stock,
+               (p.sale_price * p.stock)::numeric AS stock_value,
+               (p.cost_price * p.stock)::numeric AS cost_value
+        FROM products p LEFT JOIN categories c ON c.id = p.category_id
+        WHERE p.is_active = true ORDER BY p.name
+        LIMIT $1 OFFSET $2
+      `,
+        [limit, offset],
+      ),
+      pool.query(`SELECT COUNT(*)::int FROM products WHERE is_active = true`),
+      pool.query(`
+        SELECT c.name AS category_name, c.color,
+               COUNT(p.id)::int AS product_count,
+               SUM(p.stock * p.sale_price)::numeric AS total_value
+        FROM categories c LEFT JOIN products p ON p.category_id=c.id AND p.is_active=true
+        GROUP BY c.id ORDER BY total_value DESC
+      `),
+    ]);
 
-    res.json({ products, by_category: byCategory });
+    res.json({
+      products: productsRes.rows,
+      total: parseInt(countRes.rows[0].count),
+      page: parseInt(page),
+      limit: parseInt(limit),
+      by_category: byCategoryRes.rows,
+    });
   } catch (err) {
     res.status(500).json({ error: 'Error al generar reporte de inventario' });
   }

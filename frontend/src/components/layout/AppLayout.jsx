@@ -9,6 +9,7 @@ import {
   FiTag,
   FiShoppingCart,
   FiGift,
+  FiClock,
   FiAlertTriangle,
   FiCreditCard,
   FiRepeat,
@@ -33,6 +34,7 @@ const NAV = [
     items: [
       { to: "/caja", icon: <FiShoppingCart />, label: "Caja / POS" },
       { to: "/combos", icon: <FiGift />, label: "Combos" },
+      { to: "/pendientes", icon: <FiClock />, label: "Pendientes" },
       {
         to: "/alertas",
         icon: <FiAlertTriangle />,

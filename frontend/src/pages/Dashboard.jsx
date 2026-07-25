@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { reportsAPI } from "../services/api";
-import { StatCard } from "../components/ui";
+import { StatCard, Card, CardHeader, CardBody } from "../components/ui";
 import { StatCardSkeleton, ActivitySkeleton } from "../components/Skeletons";
 import TreasuryPanel from "../components/treasury/TreasuryPanel";
 import { fmt, timeAgo, MOVEMENT_COLORS } from "../utils/helpers";
@@ -90,8 +90,8 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-grid">
-        <div className="card">
-          <div className="card-header">
+        <Card>
+          <CardHeader>
             <h3>Actividad Reciente</h3>
             <button
               className="btn btn-ghost btn-sm"
@@ -99,11 +99,11 @@ export default function Dashboard() {
             >
               Ver todo
             </button>
-          </div>
+          </CardHeader>
           {loading ? (
             <ActivitySkeleton />
           ) : (
-            <div className="card-body" style={{ padding: "8px 20px" }}>
+            <CardBody style={{ padding: "8px 20px" }}>
               {(data?.recent_activity || []).length === 0 ? (
                 <p
                   style={{
@@ -164,19 +164,19 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
-            </div>
+            </CardBody>
           )}
-        </div>
+        </Card>
 
         <div
           className="dashboard-secondary"
           style={{ display: "flex", flexDirection: "column", gap: 16 }}
         >
-          <div className="card">
-            <div className="card-header">
+          <Card>
+            <CardHeader>
               <h3>Acciones Rápidas</h3>
-            </div>
-            <div className="card-body quick-actions">
+            </CardHeader>
+            <CardBody className="quick-actions">
               {[
                 { icon: <FiShoppingCart />, label: "Nueva Venta", to: "/caja" },
                 {
@@ -206,15 +206,12 @@ export default function Dashboard() {
                   </span>
                 </button>
               ))}
-            </div>
-          </div>
+            </CardBody>
+          </Card>
 
           {!loading && data?.low_stock_count > 0 && (
-            <div className="card" style={{ border: "1.5px solid var(--danger-border)" }}>
-              <div
-                className="card-header"
-                style={{ background: "var(--red-light)" }}
-              >
+            <Card style={{ border: "1.5px solid var(--danger-border)" }}>
+              <CardHeader style={{ background: "var(--red-light)" }}>
                 <h3 style={{ color: "var(--red)" }}>
                   <FiAlertTriangle /> Alertas de Stock
                 </h3>
@@ -224,15 +221,15 @@ export default function Dashboard() {
                 >
                   Ver todo
                 </button>
-              </div>
-              <div className="card-body">
+              </CardHeader>
+              <CardBody>
                 <p style={{ fontSize: 13.5, color: "var(--text2)" }}>
                   <strong>{data.low_stock_count}</strong> producto
                   {data.low_stock_count !== 1 ? "s" : ""} con stock bajo el
                   mínimo.
                 </p>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
           )}
         </div>
       </div>

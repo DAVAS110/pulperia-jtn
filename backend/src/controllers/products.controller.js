@@ -1,5 +1,12 @@
 const { pool } = require('../config/database');
 
+// cost_price es dato de costo/margen — solo admin lo ve
+const stripCost = (row, isAdmin) => {
+  if (!row || isAdmin) return row;
+  const { cost_price, ...rest } = row;
+  return rest;
+};
+
 // GET /api/products
 const list = async (req, res) => {
   try {
@@ -47,8 +54,9 @@ const list = async (req, res) => {
       pool.query(countQuery, countParams)
     ]);
 
+    const isAdmin = req.user.role === 'admin';
     res.json({
-      products: dataRes.rows,
+      products: dataRes.rows.map((row) => stripCost(row, isAdmin)),
       total: parseInt(countRes.rows[0].count),
       page: parseInt(page),
       limit: parseInt(limit)
@@ -68,7 +76,7 @@ const getOne = async (req, res) => {
       WHERE p.id = $1
     `, [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json({ product: rows[0] });
+    res.json({ product: stripCost(rows[0], req.user.role === 'admin') });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener producto' });
   }
@@ -83,7 +91,7 @@ const getBySku = async (req, res) => {
       WHERE p.sku = $1 AND p.is_active = true
     `, [req.params.sku]);
     if (!rows[0]) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json({ product: rows[0] });
+    res.json({ product: stripCost(rows[0], req.user.role === 'admin') });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener producto' });
   }
@@ -114,7 +122,7 @@ const create = async (req, res) => {
         [rows[0].id, req.user.id, parseInt(stock)]
       );
     }
-    res.status(201).json({ product: rows[0] });
+    res.status(201).json({ product: stripCost(rows[0], req.user.role === 'admin') });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al crear producto' });
@@ -144,7 +152,7 @@ const update = async (req, res) => {
         min_stock != null ? parseInt(min_stock) : null,
         image_url, is_active, req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json({ product: rows[0] });
+    res.json({ product: stripCost(rows[0], req.user.role === 'admin') });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al actualizar producto' });

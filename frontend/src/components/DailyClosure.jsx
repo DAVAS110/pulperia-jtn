@@ -71,7 +71,7 @@ export default function DailyClosure() {
       setData(res);
     } catch (err) {
       console.error("[DailyClosure] Error:", err);
-      toast.error("Error al cargar datos");
+      toast.error(err.response?.data?.error || "Error al cargar datos");
     } finally {
       setLoading(false);
     }

@@ -1,23 +1,21 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL: import.meta.env.DEV
+    ? "/api"
+    : import.meta.env.VITE_API_URL || "/api",
   timeout: 30000,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(err);
   },
@@ -62,17 +60,22 @@ export const salesAPI = {
 export const reportsAPI = {
   dashboard: () => api.get("/reports/dashboard"),
   sales: (params) => api.get("/reports/sales", { params }),
-  inventory: () => api.get("/reports/inventory"),
+  inventory: (params) => api.get("/reports/inventory", { params }),
   daily: (params) => api.get("/reports/daily", { params }),
   sendEmail: (data) => api.post("/reports/send-email", data),
 };
 
 export const combosAPI = {
   list: () => api.get("/combos"),
-  listAll: () => api.get("/combos/all"),
+  listAll: (params) => api.get("/combos/all", { params }),
   create: (data) => api.post("/combos", data),
   update: (id, data) => api.put(`/combos/${id}`, data),
   delete: (id) => api.delete(`/combos/${id}`),
+};
+
+export const debtsAPI = {
+  list: (params) => api.get("/debts", { params }),
+  pay: (id, data) => api.post(`/debts/${id}/pay`, data),
 };
 
 export const treasuryAPI = {

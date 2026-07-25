@@ -3,28 +3,45 @@ const { pool } = require("../config/database");
 // GET /api/combos
 const list = async (req, res) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT c.*,
-        json_agg(
-          json_build_object(
-            'id', ci.id,
-            'product_id', ci.product_id,
-            'quantity', ci.quantity,
-            'product_name', p.name,
-            'product_sku', p.sku,
-            'product_stock', p.stock,
-            'product_price', p.sale_price,
-            'product_image', p.image_url
-          ) ORDER BY p.name
-        ) FILTER (WHERE ci.id IS NOT NULL) AS items
-      FROM combos c
-      LEFT JOIN combo_items ci ON ci.combo_id = c.id
-      LEFT JOIN products p ON p.id = ci.product_id
-      WHERE c.is_active = true
-      GROUP BY c.id
-      ORDER BY c.name
-    `);
-    res.json({ combos: rows });
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const [dataRes, countRes] = await Promise.all([
+      pool.query(
+        `
+        SELECT c.id, c.name, c.description, c.price, c.image_url, c.is_active, c.created_at,
+          json_agg(
+            json_build_object(
+              'id', ci.id,
+              'product_id', ci.product_id,
+              'quantity', ci.quantity,
+              'product_name', p.name,
+              'product_sku', p.sku,
+              'product_stock', p.stock,
+              'product_price', p.sale_price,
+              'product_image', p.image_url
+            ) ORDER BY p.name
+          ) FILTER (WHERE ci.id IS NOT NULL) AS items
+        FROM combos c
+        LEFT JOIN combo_items ci ON ci.combo_id = c.id
+        LEFT JOIN products p ON p.id = ci.product_id
+        WHERE c.is_active = true
+        GROUP BY c.id
+        ORDER BY c.name
+        LIMIT $1 OFFSET $2
+      `,
+        [limit, offset],
+      ),
+      pool.query(`SELECT COUNT(*)::int FROM combos WHERE is_active = true`),
+    ]);
+
+    res.json({
+      combos: dataRes.rows,
+      total: parseInt(countRes.rows[0].count),
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(parseInt(countRes.rows[0].count) / parseInt(limit)),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al obtener combos" });
@@ -34,27 +51,44 @@ const list = async (req, res) => {
 // GET /api/combos/all  (incluyendo inactivos, para admin)
 const listAll = async (req, res) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT c.*,
-        json_agg(
-          json_build_object(
-            'id', ci.id,
-            'product_id', ci.product_id,
-            'quantity', ci.quantity,
-            'product_name', p.name,
-            'product_sku', p.sku,
-            'product_stock', p.stock,
-            'product_price', p.sale_price,
-            'product_image', p.image_url
-          ) ORDER BY p.name
-        ) FILTER (WHERE ci.id IS NOT NULL) AS items
-      FROM combos c
-      LEFT JOIN combo_items ci ON ci.combo_id = c.id
-      LEFT JOIN products p ON p.id = ci.product_id
-      GROUP BY c.id
-      ORDER BY c.created_at DESC
-    `);
-    res.json({ combos: rows });
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const [dataRes, countRes] = await Promise.all([
+      pool.query(
+        `
+        SELECT c.id, c.name, c.description, c.price, c.image_url, c.is_active, c.created_at,
+          json_agg(
+            json_build_object(
+              'id', ci.id,
+              'product_id', ci.product_id,
+              'quantity', ci.quantity,
+              'product_name', p.name,
+              'product_sku', p.sku,
+              'product_stock', p.stock,
+              'product_price', p.sale_price,
+              'product_image', p.image_url
+            ) ORDER BY p.name
+          ) FILTER (WHERE ci.id IS NOT NULL) AS items
+        FROM combos c
+        LEFT JOIN combo_items ci ON ci.combo_id = c.id
+        LEFT JOIN products p ON p.id = ci.product_id
+        GROUP BY c.id
+        ORDER BY c.created_at DESC
+        LIMIT $1 OFFSET $2
+      `,
+        [limit, offset],
+      ),
+      pool.query(`SELECT COUNT(*)::int FROM combos`),
+    ]);
+
+    res.json({
+      combos: dataRes.rows,
+      total: parseInt(countRes.rows[0].count),
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(parseInt(countRes.rows[0].count) / parseInt(limit)),
+    });
   } catch (err) {
     res.status(500).json({ error: "Error al obtener combos" });
   }

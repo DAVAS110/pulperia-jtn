@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { reportsAPI } from "../services/api";
-import { Spinner, StatCard } from "../components/ui";
+import { toast } from "../store/toastStore";
+import useAuthStore from "../store/authStore";
+import { Spinner, StatCard, Card, CardHeader } from "../components/ui";
 import { fmt, downloadCSV } from "../utils/helpers";
 import {
   FiBox,
@@ -51,6 +53,7 @@ const chartOpts = {
 };
 
 export default function Reportes() {
+  const { isAdmin } = useAuthStore();
   const [dash, setDash] = useState(null);
   const [salesReport, setSalesReport] = useState(null);
   const [invReport, setInvReport] = useState(null);
@@ -65,15 +68,21 @@ export default function Reportes() {
   const load = async () => {
     setLoading(true);
     try {
-      const [d, s, i] = await Promise.all([
+      const [d, s] = await Promise.all([
         reportsAPI.dashboard(),
         reportsAPI.sales({ date_from: dateFrom, date_to: dateTo }),
-        reportsAPI.inventory(),
       ]);
       setDash(d.data);
       setSalesReport(s.data);
-      setInvReport(i.data);
-    } catch {
+      // Reporte de valuación de inventario (incluye costo) — solo admin
+      if (isAdmin()) {
+        const { data } = await reportsAPI.inventory({ limit: 500 });
+        setInvReport(data);
+      } else {
+        setInvReport(null);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al cargar reportes");
     } finally {
       setLoading(false);
     }
@@ -143,9 +152,11 @@ export default function Reportes() {
           <p>Análisis de ventas e inventario</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-ghost" onClick={exportInventory}>
-            ⬇️ CSV Inventario
-          </button>
+          {invReport && (
+            <button className="btn btn-ghost" onClick={exportInventory}>
+              ⬇️ CSV Inventario
+            </button>
+          )}
           <button className="btn btn-ghost" onClick={exportSales}>
             ⬇️ CSV Ventas
           </button>
@@ -225,7 +236,7 @@ export default function Reportes() {
           marginBottom: 20,
         }}
       >
-        <div className="card card-body">
+        <Card className="card-body">
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
             <FiTrendingUp /> Ventas por Día
           </div>
@@ -271,9 +282,10 @@ export default function Reportes() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="card card-body">
+        {invReport && (
+        <Card className="card-body">
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
             <FiFolder /> Valor por Categoría
           </div>
@@ -317,17 +329,18 @@ export default function Reportes() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
+        )}
       </div>
 
       {/* Top products */}
       {topProds.length > 0 && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="card-header">
+        <Card style={{ marginBottom: 20 }}>
+          <CardHeader>
             <h3>
               <FiAward /> Productos Más Vendidos
             </h3>
-          </div>
+          </CardHeader>
           <div style={{ padding: "0 20px 20px", height: 260 }}>
             <Bar
               data={{
@@ -354,12 +367,12 @@ export default function Reportes() {
               }}
             />
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Payment methods */}
       {salesReport?.payment_methods?.length > 0 && (
-        <div className="card card-body" style={{ marginBottom: 20 }}>
+        <Card className="card-body" style={{ marginBottom: 20 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>
             <FiCreditCard /> Métodos de Pago
           </div>
@@ -409,16 +422,17 @@ export default function Reportes() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Inventory table */}
-      <div className="card">
-        <div className="card-header">
+      {invReport && (
+      <Card>
+        <CardHeader>
           <h3>
             <FiBox /> Estado del Inventario
           </h3>
-        </div>
+        </CardHeader>
         <div className="table-wrap">
           <table>
             <thead>
@@ -483,7 +497,8 @@ export default function Reportes() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
+      )}
     </>
   );
 }

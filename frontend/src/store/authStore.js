@@ -1,9 +1,8 @@
-import { create } from 'zustand';
-import { authAPI } from '../services/api';
+import { create } from "zustand";
+import { authAPI } from "../services/api";
 
 const useAuthStore = create((set, get) => ({
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
-  token: localStorage.getItem('token') || null,
+  user: null, // 🔐 NO USAR localStorage - cookies httpOnly manejan persistencia
   loading: false,
   error: null,
 
@@ -11,24 +10,38 @@ const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const { data } = await authAPI.login({ email, password });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, token: data.token, loading: false });
+      // Cookie de autenticación se establece automáticamente en respuesta
+      set({ user: data.user, loading: false });
       return { success: true };
     } catch (err) {
-      const error = err.response?.data?.error || 'Error al iniciar sesión';
+      const error = err.response?.data?.error || "Error al iniciar sesión";
       set({ loading: false, error });
       return { success: false, error };
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    set({ user: null, token: null });
+  logout: async () => {
+    try {
+      await authAPI.logout();
+      // Cookie se limpia automáticamente en backend
+    } catch {
+      // ignore logout failure
+    }
+    set({ user: null });
   },
 
-  isAdmin: () => get().user?.role === 'admin',
+  validateSession: async () => {
+    try {
+      const { data } = await authAPI.me();
+      // Cookie válida = servidor responde con datos
+      set({ user: data.user });
+    } catch {
+      // Cookie inválida/expirada = servidor responde 401
+      set({ user: null });
+    }
+  },
+
+  isAdmin: () => get().user?.role === "admin",
 }));
 
 export default useAuthStore;

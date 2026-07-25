@@ -17,12 +17,13 @@ import QRPage from "./pages/QRPage";
 import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
 import Combos from "./pages/Combos";
+import Pendientes from "./pages/Pendientes";
 import { useKeepAlive } from "./hooks/useKeepAlive";
 import { InstallBanner, UpdatePrompt } from "./components/PWAComponents";
 
 function PrivateRoute({ children }) {
-  const { token } = useAuthStore();
-  return token ? children : <Navigate to="/login" replace />;
+  const { user } = useAuthStore();
+  return user ? children : <Navigate to="/login" replace />;
 }
 
 function AppWithKeepAlive({ children }) {
@@ -31,7 +32,11 @@ function AppWithKeepAlive({ children }) {
 }
 
 function App() {
-  const { token } = useAuthStore();
+  const { user, validateSession } = useAuthStore();
+
+  React.useEffect(() => {
+    validateSession();
+  }, [validateSession]);
 
   return (
     <BrowserRouter>
@@ -44,7 +49,7 @@ function App() {
         <Routes>
           <Route
             path="/login"
-            element={token ? <Navigate to="/" replace /> : <AuthPage />}
+            element={user ? <Navigate to="/" replace /> : <AuthPage />}
           />
           <Route
             path="/*"
@@ -63,6 +68,7 @@ function App() {
                     <Route path="/reportes" element={<Reportes />} />
                     <Route path="/configuracion" element={<Configuracion />} />
                     <Route path="/combos" element={<Combos />} />
+                    <Route path="/pendientes" element={<Pendientes />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </AppLayout>

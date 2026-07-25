@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { productsAPI, salesAPI, combosAPI } from "../services/api";
 import { Modal } from "../components/ui";
+import PaymentModal from "../components/PaymentModal";
 import { toast } from "../store/toastStore";
 import { fmt } from "../utils/helpers";
 import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
-import { compressImage, formatBytes, base64Size } from "../utils/imageUtils";
 import { io } from "socket.io-client";
 import {
   FiGift,
@@ -17,10 +17,8 @@ import {
   FiTrash2,
   FiDollarSign,
   FiSmartphone,
-  FiCamera,
-  FiImage,
   FiSmile,
-  FiDownload,
+  FiClock,
 } from "react-icons/fi";
 
 export default function Caja() {
@@ -30,20 +28,15 @@ export default function Caja() {
   const [filtered, setFiltered] = useState([]);
   const [cart, setCart] = useState([]);
   const [payModal, setPayModal] = useState(false);
-  const [payMethod, setPayMethod] = useState("efectivo");
-  const [cashReceived, setCashReceived] = useState("");
-  const [sinpeDescription, setSinpeDescription] = useState("");
-  const [receivedBy, setReceivedBy] = useState("");
-  const [sinpePhoto, setSinpePhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [receiptModal, setReceiptModal] = useState(false);
-  const [viewPhotoModal, setViewPhotoModal] = useState(null);
   const [skuInput, setSkuInput] = useState("");
   const [activeTab, setActiveTab] = useState("productos"); // 'productos' | 'combos'
-  const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
+  const [debtModal, setDebtModal] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [savingDebt, setSavingDebt] = useState(false);
 
   const loadCombos = useCallback(async () => {
     try {
@@ -272,46 +265,24 @@ export default function Caja() {
   const removeFromCart = (id) =>
     setCart((prev) => prev.filter((i) => i.product_id !== id));
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const change =
-    payMethod === "efectivo" && cashReceived
-      ? parseFloat(cashReceived) - total
-      : 0;
 
-  const handlePhotoFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("La imagen no puede superar 10MB");
-      return;
-    }
+  const cartPayload = () => ({
+    items: cart
+      .filter((i) => !i.isCombo)
+      .map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+    combos: cart
+      .filter((i) => i.isCombo)
+      .map((i) => ({ combo_id: i.combo_id, quantity: i.quantity })),
+  });
+
+  const clearCartAfterSale = async () => {
+    // Refrescar productos y combos desde el servidor para evitar inconsistencias
+    await loadProducts();
+    await loadCombos();
+    setCart([]);
     try {
-      toast.info && toast.info("Comprimiendo imagen...");
-      const compressed = await compressImage(file, {
-        maxWidth: 1000,
-        quality: 0.7,
-      });
-      const originalSize = formatBytes(file.size);
-      const compressedSize = formatBytes(base64Size(compressed));
-      setSinpePhoto(compressed);
-      setPhotoPreview(compressed);
-      toast.success(`Imagen lista (${originalSize} → ${compressedSize})`);
-    } catch {
-      toast.error("Error al procesar la imagen");
-    }
-    e.target.value = "";
-  };
-
-  const removePhoto = () => {
-    setSinpePhoto(null);
-    setPhotoPreview(null);
-  };
-
-  const openPayModal = () => {
-    setSinpeDescription("");
-    setReceivedBy("");
-    setCashReceived("");
-    removePhoto();
-    setPayModal(true);
+      localStorage.removeItem("cart");
+    } catch {}
   };
 
   const handleSkuScan = async (e) => {
@@ -328,51 +299,48 @@ export default function Caja() {
     setSkuInput("");
   };
 
-  const confirmSale = async () => {
+  const confirmSale = async (payment) => {
     if (!cart.length) return toast.error("El carrito está vacío");
-    if (
-      payMethod === "efectivo" &&
-      cashReceived &&
-      parseFloat(cashReceived) < total
-    )
-      return toast.error("Efectivo insuficiente");
-    if (payMethod === "sinpe" && !receivedBy.trim())
-      return toast.error("Indica quién recibió el SINPE");
     setProcessing(true);
     try {
-      const { data } = await salesAPI.create({
-        items: cart
-          .filter((i) => !i.isCombo)
-          .map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
-        combos: cart
-          .filter((i) => i.isCombo)
-          .map((i) => ({ combo_id: i.combo_id, quantity: i.quantity })),
-        payment_method: payMethod,
-        cash_received:
-          payMethod === "efectivo" && cashReceived
-            ? parseFloat(cashReceived)
-            : null,
-        sinpe_description: payMethod === "sinpe" ? sinpeDescription : null,
-        sinpe_photo: payMethod === "sinpe" ? sinpePhoto : null,
-        received_by: receivedBy.trim() || null,
-      });
+      const { data } = await salesAPI.create({ ...cartPayload(), ...payment });
       setLastSale(data.sale);
-      // Refrescar productos y combos desde el servidor para evitar inconsistencias
-      await loadProducts();
-      await loadCombos();
-      // Limpiar carrito local y storage
-      setCart([]);
-      try {
-        localStorage.removeItem("cart");
-      } catch {}
+      await clearCartAfterSale();
       setPayModal(false);
       setReceiptModal(true);
-      setCashReceived("");
       toast.success("Venta registrada");
     } catch (err) {
       toast.error(err.response?.data?.error || "Error al registrar venta");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const openDebtModal = () => {
+    setCustomerName("");
+    setCustomerPhone("");
+    setDebtModal(true);
+  };
+
+  const confirmDebt = async () => {
+    if (!cart.length) return toast.error("El carrito está vacío");
+    if (!customerName.trim())
+      return toast.error("Indica el nombre del cliente");
+    setSavingDebt(true);
+    try {
+      await salesAPI.create({
+        ...cartPayload(),
+        payment_method: "fiado",
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim() || null,
+      });
+      await clearCartAfterSale();
+      setDebtModal(false);
+      toast.success(`Pendiente guardado para ${customerName.trim()}`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al dejar pendiente");
+    } finally {
+      setSavingDebt(false);
     }
   };
 
@@ -798,11 +766,24 @@ export default function Caja() {
                 fontSize: 15,
                 justifyContent: "center",
               }}
-              onClick={openPayModal}
+              onClick={() => setPayModal(true)}
               disabled={!cart.length}
             >
               <FiCreditCard /> Cobrar
             </button>
+            {cart.length > 0 && (
+              <button
+                className="btn btn-ghost"
+                style={{
+                  width: "100%",
+                  marginTop: 8,
+                  justifyContent: "center",
+                }}
+                onClick={openDebtModal}
+              >
+                <FiClock /> Dejar pendiente
+              </button>
+            )}
             {cart.length > 0 && (
               <button
                 className="btn btn-ghost"
@@ -822,10 +803,20 @@ export default function Caja() {
       </div>
 
       {/* Payment Modal */}
-      <Modal
+      <PaymentModal
         open={payModal}
         onClose={() => setPayModal(false)}
-        title="Confirmar Pago"
+        onConfirm={confirmSale}
+        processing={processing}
+        total={total}
+        items={cart}
+      />
+
+      {/* Debt Modal (dejar pendiente) */}
+      <Modal
+        open={debtModal}
+        onClose={() => setDebtModal(false)}
+        title="Dejar Pendiente"
         maxWidth={460}
       >
         <div
@@ -873,206 +864,35 @@ export default function Caja() {
         </div>
 
         <div className="field">
-          <label>Método de Pago</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["efectivo", "sinpe"].map((m) => (
-              <button
-                key={m}
-                className={`btn ${payMethod === m ? "btn-accent" : "btn-ghost"}`}
-                style={{ flex: 1, justifyContent: "center" }}
-                onClick={() => {
-                  setPayMethod(m);
-                  setCashReceived("");
-                  setSinpeDescription("");
-                  setReceivedBy("");
-                  removePhoto();
-                }}
-              >
-                {m === "efectivo" ? (
-                  <>
-                    <FiDollarSign /> Efectivo
-                  </>
-                ) : (
-                  <>
-                    <FiSmartphone /> SINPE
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {payMethod === "efectivo" && (
-          <>
-            <div className="field">
-              <label>Efectivo Recibido (₡)</label>
-              <input
-                type="number"
-                value={cashReceived}
-                onChange={(e) => setCashReceived(e.target.value)}
-                placeholder={total.toString()}
-                min={total}
-                step="100"
-              />
-            </div>
-            {cashReceived && parseFloat(cashReceived) >= total && (
-              <div
-                style={{
-                  background: "var(--green-light)",
-                  border: "1px solid var(--green)",
-                  borderRadius: 10,
-                  padding: "12px 16px",
-                  textAlign: "center",
-                  marginBottom: 12,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "var(--green)",
-                    fontWeight: 600,
-                  }}
-                >
-                  CAMBIO
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 26,
-                    color: "var(--green)",
-                  }}
-                >
-                  {fmt(change)}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {payMethod === "sinpe" && (
-          <>
-            <div className="field">
-              <label>Descripción / Referencia SINPE</label>
-              <input
-                type="text"
-                value={sinpeDescription}
-                onChange={(e) => setSinpeDescription(e.target.value)}
-                placeholder="Ej: SINPE #123456, Juan Pérez…"
-              />
-            </div>
-            <div className="field">
-              <label>
-                <FiCamera /> Foto del comprobante (opcional)
-              </label>
-              {photoPreview ? (
-                <div style={{ position: "relative" }}>
-                  <img
-                    src={photoPreview}
-                    alt="Comprobante"
-                    onClick={() => setViewPhotoModal(photoPreview)}
-                    style={{
-                      width: "100%",
-                      maxHeight: 200,
-                      objectFit: "cover",
-                      borderRadius: 10,
-                      border: "2px solid var(--border)",
-                      cursor: "pointer",
-                      display: "block",
-                    }}
-                  />
-                  <button
-                    onClick={removePhoto}
-                    style={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      background: "var(--red)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 28,
-                      height: 28,
-                      cursor: "pointer",
-                      fontSize: 14,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <FiX />
-                  </button>
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color: "var(--text3)",
-                      marginTop: 4,
-                      textAlign: "center",
-                    }}
-                  >
-                    Toca para ampliar · Toca <FiX /> para quitar
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ flex: 1, justifyContent: "center" }}
-                    onClick={() => cameraInputRef.current?.click()}
-                  >
-                    <FiCamera /> Cámara
-                  </button>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ flex: 1, justifyContent: "center" }}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <FiImage /> Galería
-                  </button>
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    style={{ display: "none" }}
-                    onChange={handlePhotoFile}
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={handlePhotoFile}
-                  />
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        <div className="field">
-          <label>
-            {payMethod === "sinpe"
-              ? "¿Quién recibió el SINPE? *"
-              : "¿Quién recibió el pago? (opcional)"}
-          </label>
+          <label>Nombre del cliente *</label>
           <input
             type="text"
-            value={receivedBy}
-            onChange={(e) => setReceivedBy(e.target.value)}
-            placeholder="Ej: María, Carlos…"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Ej: Juan Pérez"
+            autoFocus
+          />
+        </div>
+        <div className="field">
+          <label>Teléfono (opcional)</label>
+          <input
+            type="text"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="Ej: 8888-8888"
           />
         </div>
 
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={() => setPayModal(false)}>
+          <button className="btn btn-ghost" onClick={() => setDebtModal(false)}>
             Cancelar
           </button>
           <button
             className="btn btn-accent"
-            onClick={confirmSale}
-            disabled={processing}
+            onClick={confirmDebt}
+            disabled={savingDebt}
           >
-            {processing ? "Procesando…" : "✅ Confirmar Venta"}
+            {savingDebt ? "Guardando…" : <><FiClock /> Dejar Pendiente</>}
           </button>
         </div>
       </Modal>
@@ -1170,48 +990,6 @@ export default function Caja() {
               Nueva Venta
             </button>
           </div>
-        )}
-      </Modal>
-
-      {/* Photo viewer */}
-      <Modal
-        open={!!viewPhotoModal}
-        onClose={() => setViewPhotoModal(null)}
-        title={
-          <>
-            <FiCamera /> Comprobante SINPE
-          </>
-        }
-        maxWidth={600}
-      >
-        {viewPhotoModal && (
-          <>
-            <img
-              src={viewPhotoModal}
-              alt="Comprobante"
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid var(--border)",
-                display: "block",
-              }}
-            />
-            <div className="modal-footer" style={{ justifyContent: "center" }}>
-              <a
-                href={viewPhotoModal}
-                download="comprobante-sinpe.jpg"
-                className="btn btn-ghost"
-              >
-                ⬇️ Descargar
-              </a>
-              <button
-                className="btn btn-accent"
-                onClick={() => setViewPhotoModal(null)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </>
         )}
       </Modal>
     </>

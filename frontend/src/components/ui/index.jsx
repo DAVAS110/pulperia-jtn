@@ -112,6 +112,25 @@ export const Badge = ({ children, color = "green" }) => (
   <span className={`badge badge-${color}`}>{children}</span>
 );
 
+// ─── CARD ─────────────────────────────────────────────────
+export const Card = ({ children, className = "", ...rest }) => (
+  <div className={`card ${className}`.trim()} {...rest}>
+    {children}
+  </div>
+);
+
+export const CardHeader = ({ children, className = "", ...rest }) => (
+  <div className={`card-header ${className}`.trim()} {...rest}>
+    {children}
+  </div>
+);
+
+export const CardBody = ({ children, className = "", ...rest }) => (
+  <div className={`card-body ${className}`.trim()} {...rest}>
+    {children}
+  </div>
+);
+
 // ─── STAT CARD ────────────────────────────────────────────
 export const StatCard = ({ icon, label, value, sub, iconBg }) => (
   <div className="stat-card">

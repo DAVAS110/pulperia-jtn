@@ -220,7 +220,7 @@ export default function Productos() {
                   <th>Producto</th>
                   <th>Categoría</th>
                   <th>Precio Venta</th>
-                  <th>Costo</th>
+                  {isAdmin() && <th>Costo</th>}
                   <th>Stock</th>
                   <th>Estado</th>
                   <th>Acciones</th>
@@ -268,9 +268,11 @@ export default function Productos() {
                       )}
                     </td>
                     <td style={{ fontWeight: 700 }}>{fmt(p.sale_price)}</td>
-                    <td style={{ color: "var(--text3)" }}>
-                      {fmt(p.cost_price)}
-                    </td>
+                    {isAdmin() && (
+                      <td style={{ color: "var(--text3)" }}>
+                        {fmt(p.cost_price)}
+                      </td>
+                    )}
                     <td>
                       <span
                         style={{
@@ -382,17 +384,19 @@ export default function Productos() {
               step="0.01"
             />
           </div>
-          <div className="field">
-            <label>Costo (₡)</label>
-            <input
-              type="number"
-              value={form.cost_price}
-              onChange={set("cost_price")}
-              placeholder="800"
-              min="0"
-              step="0.01"
-            />
-          </div>
+          {isAdmin() && (
+            <div className="field">
+              <label>Costo (₡)</label>
+              <input
+                type="number"
+                value={form.cost_price}
+                onChange={set("cost_price")}
+                placeholder="800"
+                min="0"
+                step="0.01"
+              />
+            </div>
+          )}
         </div>
         <div className="form-row">
           <div className="field">

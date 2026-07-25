@@ -5,9 +5,19 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const routes = require("./routes");
 const { setIO } = require("./socket");
+const {
+  globalLimiter,
+  listLimiter,
+  writeLimiter,
+} = require("./middleware/rateLimit");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Detrás de un único reverse proxy (Render). Necesario para que
+// express-rate-limit pueda leer X-Forwarded-For de forma segura;
+// sin esto, cada request /api lanza ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set("trust proxy", 1);
 
 // ─── MIDDLEWARE ───────────────────────────────────────────
 app.use(
@@ -16,8 +26,15 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+app.use("/api", globalLimiter);
+app.use("/api", (req, res, next) =>
+  req.method === "GET" ? listLimiter(req, res, next) : next(),
+);
+app.use("/api", (req, res, next) =>
+  req.method === "GET" ? next() : writeLimiter(req, res, next),
+);
 
 // ─── ROUTES ───────────────────────────────────────────────
 app.get("/health", (req, res) =>

@@ -15,6 +15,14 @@ const dailyReport = async (req, res) => {
     const dateFrom = req.query.date_from || req.query.date || today;
     const dateTo = req.query.date_to || req.query.date || today;
 
+    const rangeDays = (new Date(dateTo) - new Date(dateFrom)) / 86400000;
+    if (Number.isNaN(rangeDays) || rangeDays < 0)
+      return res.status(400).json({ error: "Rango de fechas inválido" });
+    if (rangeDays > 31)
+      return res
+        .status(400)
+        .json({ error: "Rango de fechas muy amplio (máx 31 días)" });
+
     const [salesRes, salesDetailRes, movRes, treasuryRes, lowStockRes] =
       await Promise.all([
         // Resumen por método de pago

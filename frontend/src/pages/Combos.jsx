@@ -35,7 +35,7 @@ export default function Combos() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await combosAPI.listAll();
+      const { data } = await combosAPI.listAll({ limit: 200 });
       setCombos(data.combos);
     } catch {
       toast.error("Error al cargar combos");

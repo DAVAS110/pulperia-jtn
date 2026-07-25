@@ -1,18 +1,21 @@
-const { pool } = require('../config/database');
+const { pool } = require("../config/database");
 
 // GET /api/treasury — saldos actuales + resumen
 const getSummary = async (req, res) => {
   try {
-    const [accountsRes, recentRes, totalsRes, summaryRes, historyRes] = await Promise.all([
-      pool.query('SELECT * FROM treasury_accounts ORDER BY type'),
-      pool.query(`
-        SELECT tm.*, u.name AS user_name
+    const [accountsRes, recentRes, totalsRes, summaryRes, historyRes] =
+      await Promise.all([
+        pool.query(
+          "SELECT id, type, balance FROM treasury_accounts ORDER BY type",
+        ),
+        pool.query(`
+        SELECT tm.id, tm.account_type, tm.direction, tm.amount, tm.category, tm.description, tm.created_at, u.name AS user_name
         FROM treasury_movements tm
         LEFT JOIN users u ON u.id = tm.user_id
         ORDER BY tm.created_at DESC
         LIMIT 20
       `),
-      pool.query(`
+        pool.query(`
         SELECT account_type,
           SUM(CASE WHEN direction='entrada' THEN amount ELSE 0 END) AS total_in,
           SUM(CASE WHEN direction='salida' THEN amount ELSE 0 END)  AS total_out
@@ -20,14 +23,14 @@ const getSummary = async (req, res) => {
         WHERE created_at >= DATE_TRUNC('month', NOW())
         GROUP BY account_type
       `),
-      pool.query(`
+        pool.query(`
         SELECT
           SUM(CASE WHEN direction='entrada' AND category = 'venta' THEN amount ELSE 0 END) AS monthly_sales,
           SUM(CASE WHEN direction='salida' THEN amount ELSE 0 END) AS monthly_outflows
         FROM treasury_movements
         WHERE created_at >= DATE_TRUNC('month', NOW())
       `),
-      pool.query(`
+        pool.query(`
         SELECT
           date_trunc('month', created_at) AS month_start,
           to_char(date_trunc('month', created_at), 'Mon YYYY') AS month_label,
@@ -39,14 +42,21 @@ const getSummary = async (req, res) => {
         GROUP BY 1
         ORDER BY 1 DESC
       `),
-    ]);
+      ]);
 
-    const caja  = accountsRes.rows.find(a => a.type === 'caja')  || { balance: 0 };
-    const sinpe = accountsRes.rows.find(a => a.type === 'sinpe') || { balance: 0 };
-    const summaryRow = summaryRes.rows[0] || { monthly_sales: 0, monthly_outflows: 0 };
+    const caja = accountsRes.rows.find((a) => a.type === "caja") || {
+      balance: 0,
+    };
+    const sinpe = accountsRes.rows.find((a) => a.type === "sinpe") || {
+      balance: 0,
+    };
+    const summaryRow = summaryRes.rows[0] || {
+      monthly_sales: 0,
+      monthly_outflows: 0,
+    };
 
     res.json({
-      caja:  { balance: parseFloat(caja.balance) },
+      caja: { balance: parseFloat(caja.balance) },
       sinpe: { balance: parseFloat(sinpe.balance) },
       recent_movements: recentRes.rows,
       monthly_totals: totalsRes.rows,
@@ -62,7 +72,7 @@ const getSummary = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al obtener tesorería' });
+    res.status(500).json({ error: "Error al obtener tesorería" });
   }
 };
 
@@ -74,29 +84,39 @@ const listMovements = async (req, res) => {
     const conditions = [];
     const params = [];
 
-    if (account_type) { params.push(account_type); conditions.push(`tm.account_type = $${params.length}`); }
-    if (direction)    { params.push(direction);     conditions.push(`tm.direction = $${params.length}`); }
+    if (account_type) {
+      params.push(account_type);
+      conditions.push(`tm.account_type = $${params.length}`);
+    }
+    if (direction) {
+      params.push(direction);
+      conditions.push(`tm.direction = $${params.length}`);
+    }
 
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     params.push(parseInt(limit), offset);
 
-    const { rows } = await pool.query(`
-      SELECT tm.*, u.name AS user_name
+    const { rows } = await pool.query(
+      `
+      SELECT tm.id, tm.account_type, tm.direction, tm.amount, tm.category, tm.description, tm.created_at, u.name AS user_name
       FROM treasury_movements tm
       LEFT JOIN users u ON u.id = tm.user_id
       ${where}
       ORDER BY tm.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
-    `, params);
+    `,
+      params,
+    );
 
     const countParams = params.slice(0, -2);
     const countRes = await pool.query(
-      `SELECT COUNT(*) FROM treasury_movements tm ${where}`, countParams
+      `SELECT COUNT(*) FROM treasury_movements tm ${where}`,
+      countParams,
     );
 
     res.json({ movements: rows, total: parseInt(countRes.rows[0].count) });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener movimientos' });
+    res.status(500).json({ error: "Error al obtener movimientos" });
   }
 };
 
@@ -104,39 +124,49 @@ const listMovements = async (req, res) => {
 const withdraw = async (req, res) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     const { account_type, amount, category, description } = req.body;
 
     if (!account_type || !amount || !category)
-      return res.status(400).json({ error: 'account_type, amount y category son requeridos' });
+      return res
+        .status(400)
+        .json({ error: "account_type, amount y category son requeridos" });
 
     const amt = parseFloat(amount);
-    if (amt <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
+    if (amt <= 0)
+      return res.status(400).json({ error: "El monto debe ser mayor a 0" });
 
     const accRes = await client.query(
-      'SELECT * FROM treasury_accounts WHERE type = $1 FOR UPDATE', [account_type]
+      "SELECT id, type, balance FROM treasury_accounts WHERE type = $1 FOR UPDATE",
+      [account_type],
     );
     const account = accRes.rows[0];
-    if (!account) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    if (!account)
+      return res.status(404).json({ error: "Cuenta no encontrada" });
     if (parseFloat(account.balance) < amt)
-      return res.status(400).json({ error: `Saldo insuficiente. Disponible: ₡${account.balance}` });
+      return res
+        .status(400)
+        .json({ error: `Saldo insuficiente. Disponible: ₡${account.balance}` });
 
     await client.query(
-      'UPDATE treasury_accounts SET balance = balance - $1, updated_at = NOW() WHERE type = $2',
-      [amt, account_type]
+      "UPDATE treasury_accounts SET balance = balance - $1, updated_at = NOW() WHERE type = $2",
+      [amt, account_type],
     );
 
-    const { rows } = await client.query(`
+    const { rows } = await client.query(
+      `
       INSERT INTO treasury_movements (account_type, direction, amount, category, description, user_id)
-      VALUES ($1, 'salida', $2, $3, $4, $5) RETURNING *
-    `, [account_type, amt, category, description || null, req.user.id]);
+      VALUES ($1, 'salida', $2, $3, $4, $5) RETURNING id, account_type, direction, amount, category, description, created_at
+    `,
+      [account_type, amt, category, description || null, req.user.id],
+    );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     res.status(201).json({ movement: rows[0] });
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     console.error(err);
-    res.status(500).json({ error: err.message || 'Error al registrar retiro' });
+    res.status(500).json({ error: err.message || "Error al registrar retiro" });
   } finally {
     client.release();
   }
@@ -146,30 +176,36 @@ const withdraw = async (req, res) => {
 const deposit = async (req, res) => {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     const { account_type, amount, category, description } = req.body;
 
     if (!account_type || !amount || !category)
-      return res.status(400).json({ error: 'account_type, amount y category son requeridos' });
+      return res
+        .status(400)
+        .json({ error: "account_type, amount y category son requeridos" });
 
     const amt = parseFloat(amount);
-    if (amt <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
+    if (amt <= 0)
+      return res.status(400).json({ error: "El monto debe ser mayor a 0" });
 
     await client.query(
-      'UPDATE treasury_accounts SET balance = balance + $1, updated_at = NOW() WHERE type = $2',
-      [amt, account_type]
+      "UPDATE treasury_accounts SET balance = balance + $1, updated_at = NOW() WHERE type = $2",
+      [amt, account_type],
     );
 
-    const { rows } = await client.query(`
+    const { rows } = await client.query(
+      `
       INSERT INTO treasury_movements (account_type, direction, amount, category, description, user_id)
-      VALUES ($1, 'entrada', $2, $3, $4, $5) RETURNING *
-    `, [account_type, amt, category, description || null, req.user.id]);
+      VALUES ($1, 'entrada', $2, $3, $4, $5) RETURNING id, account_type, direction, amount, category, description, created_at
+    `,
+      [account_type, amt, category, description || null, req.user.id],
+    );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     res.status(201).json({ movement: rows[0] });
   } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ error: 'Error al registrar ingreso' });
+    await client.query("ROLLBACK");
+    res.status(500).json({ error: "Error al registrar ingreso" });
   } finally {
     client.release();
   }

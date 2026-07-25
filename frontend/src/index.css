@@ -20,6 +20,7 @@
   --sidebar-gradient-start: #022833;
   --sidebar-gradient-end: #053a47;
   --auth-gradient-start: #0c4a6e;
+  --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent2));
   --blue: #0369a1;
   --blue-light: #dbeafe;
   --yellow: #b45309;
@@ -104,7 +105,7 @@ h3 {
 .sidebar-logo .logo-icon {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  background: var(--gradient-accent);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -192,7 +193,7 @@ h3 {
 .avatar {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  background: var(--gradient-accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1129,7 +1130,7 @@ td {
 .auth-logo .icon {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  background: var(--gradient-accent);
   border-radius: 18px;
   display: inline-flex;
   align-items: center;

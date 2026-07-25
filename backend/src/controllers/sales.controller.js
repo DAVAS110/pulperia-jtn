@@ -69,6 +69,8 @@ const create = async (req, res) => {
       sinpe_photo,
       received_by,
       notes,
+      customer_name,
+      customer_phone,
     } = req.body;
 
     if ((!items || !items.length) && (!comboItems || !comboItems.length))
@@ -81,6 +83,10 @@ const create = async (req, res) => {
       return res
         .status(400)
         .json({ error: "Debe indicar quién recibió el SINPE" });
+    if (payment_method === "fiado" && !customer_name?.trim())
+      return res
+        .status(400)
+        .json({ error: "Debe indicar el nombre del cliente" });
 
     let subtotal = 0;
     const enrichedItems = [];
@@ -166,8 +172,8 @@ const create = async (req, res) => {
 
     const saleRes = await client.query(
       `INSERT INTO sales (user_id, total, subtotal, payment_method, cash_received, change_given,
-                          sinpe_description, sinpe_photo, received_by, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+                          sinpe_description, sinpe_photo, received_by, notes, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [
         req.user.id,
         total,
@@ -179,6 +185,7 @@ const create = async (req, res) => {
         payment_method === "sinpe" ? sinpe_photo || null : null,
         received_by?.trim() || null,
         notes || null,
+        payment_method === "fiado" ? "pendiente" : "completada",
       ],
     );
     const sale = saleRes.rows[0];
@@ -246,19 +253,34 @@ const create = async (req, res) => {
       }
     }
 
-    // Auto-update treasury
-    const accountType = payment_method === "efectivo" ? "caja" : "sinpe";
-    await client.query(
-      "UPDATE treasury_accounts SET balance = balance + $1, updated_at = NOW() WHERE type = $2",
-      [total, accountType],
-    );
-    await client.query(
-      `
-      INSERT INTO treasury_movements (account_type, direction, amount, category, description, reference_sale_id, user_id)
-      VALUES ($1, 'entrada', $2, 'venta', 'Venta registrada', $3, $4)
-    `,
-      [accountType, total, sale.id, req.user.id],
-    );
+    if (payment_method === "fiado") {
+      // No entra dinero todavía: se registra la deuda, sin tocar tesorería.
+      await client.query(
+        `INSERT INTO debts (sale_id, customer_name, customer_phone, amount, created_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          sale.id,
+          customer_name.trim(),
+          customer_phone?.trim() || null,
+          total,
+          req.user.id,
+        ],
+      );
+    } else {
+      // Auto-update treasury
+      const accountType = payment_method === "efectivo" ? "caja" : "sinpe";
+      await client.query(
+        "UPDATE treasury_accounts SET balance = balance + $1, updated_at = NOW() WHERE type = $2",
+        [total, accountType],
+      );
+      await client.query(
+        `
+        INSERT INTO treasury_movements (account_type, direction, amount, category, description, reference_sale_id, user_id)
+        VALUES ($1, 'entrada', $2, 'venta', 'Venta registrada', $3, $4)
+      `,
+        [accountType, total, sale.id, req.user.id],
+      );
+    }
 
     await client.query("COMMIT");
 

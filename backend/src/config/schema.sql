@@ -82,6 +82,37 @@ CREATE TABLE IF NOT EXISTS sale_items (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── DEBTS (fiado) ───────────────────────────────────────
+-- NOTA: sales.payment_method y sales.status en producción ya incluyen
+-- 'sinpe' y otras columnas (sinpe_photo, received_by, etc.) que no están
+-- reflejadas arriba porque este schema.sql no se mantuvo actualizado.
+-- Ejecutar contra la base real (Supabase) antes de usar esta feature:
+ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_payment_method_check;
+ALTER TABLE sales ADD CONSTRAINT sales_payment_method_check
+  CHECK (payment_method IN ('efectivo', 'sinpe', 'fiado'));
+
+ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_status_check;
+ALTER TABLE sales ADD CONSTRAINT sales_status_check
+  CHECK (status IN ('completada', 'anulada', 'pendiente'));
+
+CREATE TABLE IF NOT EXISTS debts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+  customer_name VARCHAR(150) NOT NULL,
+  customer_phone VARCHAR(30),
+  amount NUMERIC(12,2) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','pagada')),
+  paid_at TIMESTAMPTZ,
+  paid_payment_method VARCHAR(20) CHECK (paid_payment_method IN ('efectivo','sinpe')),
+  paid_sinpe_description TEXT,
+  paid_sinpe_photo TEXT,
+  paid_received_by VARCHAR(150),
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);
+CREATE INDEX IF NOT EXISTS idx_debts_sale ON debts(sale_id);
+
 -- ─── INDEXES ─────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
