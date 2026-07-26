@@ -1,9 +1,11 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.DEV
-    ? "/api"
-    : import.meta.env.VITE_API_URL || "/api",
+  // Siempre relativo al propio dominio: en dev lo resuelve el proxy de Vite
+  // (vite.config.js), en producción el rewrite de Vercel (vercel.json).
+  // Esto evita que la cookie de sesión sea "cross-site" para el navegador
+  // (Safari/iOS bloquea cookies de terceros por default).
+  baseURL: "/api",
   timeout: 30000,
   withCredentials: true,
 });
