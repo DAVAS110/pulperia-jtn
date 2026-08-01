@@ -43,6 +43,11 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Fecha de caducidad (opcional) — alerta 14 días antes de vencer.
+-- Ejecutar también contra la base real (Supabase):
+ALTER TABLE products ADD COLUMN IF NOT EXISTS expiration_date DATE;
+CREATE INDEX IF NOT EXISTS idx_products_expiration ON products(expiration_date);
+
 -- ─── INVENTORY MOVEMENTS ─────────────────────────────────
 CREATE TABLE IF NOT EXISTS inventory_movements (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

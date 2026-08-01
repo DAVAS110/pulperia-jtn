@@ -9,11 +9,12 @@ import {
   ColorSwatches,
 } from "../components/ui";
 import { toast } from "../store/toastStore";
-import { fmt, PALETTE } from "../utils/helpers";
+import { fmt, fmtDate, PALETTE, daysUntil } from "../utils/helpers";
 import {
   FiSearch,
   FiBox,
   FiAlertTriangle,
+  FiClock,
   FiEdit,
   FiTrash2,
   FiSave,
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
   stock: 0,
   min_stock: 5,
   image_url: "",
+  expiration_date: "",
 };
 
 export default function Productos() {
@@ -97,6 +99,7 @@ export default function Productos() {
       stock: p.stock,
       min_stock: p.min_stock,
       image_url: p.image_url || "",
+      expiration_date: p.expiration_date ? p.expiration_date.slice(0, 10) : "",
     });
     setModal(true);
   };
@@ -185,6 +188,7 @@ export default function Productos() {
           <option value="">Todo el stock</option>
           <option value="ok">Stock OK</option>
           <option value="bajo">Bajo stock</option>
+          <option value="vencer">Por caducar</option>
         </select>
         <select
           className="filter"
@@ -223,6 +227,7 @@ export default function Productos() {
                   {isAdmin() && <th>Costo</th>}
                   <th>Stock</th>
                   <th>Estado</th>
+                  <th>Caducidad</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -304,6 +309,33 @@ export default function Productos() {
                           "✓ OK"
                         )}
                       </span>
+                    </td>
+                    <td>
+                      {p.expiration_date ? (
+                        <span
+                          className={`badge ${
+                            p.expired
+                              ? "badge-red"
+                              : p.expiring_soon
+                                ? "badge-red"
+                                : "badge-gray"
+                          }`}
+                        >
+                          {p.expired ? (
+                            <>
+                              <FiClock /> Vencido
+                            </>
+                          ) : p.expiring_soon ? (
+                            <>
+                              <FiClock /> {daysUntil(p.expiration_date)} día(s)
+                            </>
+                          ) : (
+                            fmtDate(p.expiration_date)
+                          )}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--text3)", fontSize: 12 }}>—</span>
+                      )}
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 5 }}>
@@ -415,6 +447,16 @@ export default function Productos() {
               value={form.min_stock}
               onChange={set("min_stock")}
               min="0"
+            />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="field">
+            <label>Fecha de Caducidad (opcional)</label>
+            <input
+              type="date"
+              value={form.expiration_date}
+              onChange={set("expiration_date")}
             />
           </div>
         </div>

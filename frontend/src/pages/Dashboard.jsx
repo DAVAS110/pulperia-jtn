@@ -13,6 +13,7 @@ import {
   FiFileText,
   FiRepeat,
   FiTrendingUp,
+  FiClock,
 } from "react-icons/fi";
 
 export default function Dashboard() {
@@ -227,6 +228,30 @@ export default function Dashboard() {
                   <strong>{data.low_stock_count}</strong> producto
                   {data.low_stock_count !== 1 ? "s" : ""} con stock bajo el
                   mínimo.
+                </p>
+              </CardBody>
+            </Card>
+          )}
+
+          {!loading && data?.expiring_count > 0 && (
+            <Card style={{ border: "1.5px solid var(--danger-border)" }}>
+              <CardHeader style={{ background: "var(--red-light)" }}>
+                <h3 style={{ color: "var(--red)" }}>
+                  <FiClock /> Productos por Caducar
+                </h3>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => navigate("/alertas")}
+                >
+                  Ver todo
+                </button>
+              </CardHeader>
+              <CardBody>
+                <p style={{ fontSize: 13.5, color: "var(--text2)" }}>
+                  <strong>{data.expiring_count}</strong> producto
+                  {data.expiring_count !== 1 ? "s" : ""} vencido
+                  {data.expiring_count !== 1 ? "s" : ""} o por vencer en los
+                  próximos 14 días.
                 </p>
               </CardBody>
             </Card>

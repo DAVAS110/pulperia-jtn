@@ -27,9 +27,11 @@ const list = async (req, res) => {
       conditions.push('p.stock <= p.min_stock');
     } else if (status === 'ok') {
       conditions.push('p.stock > p.min_stock');
+    } else if (status === 'vencer') {
+      conditions.push("p.expiration_date IS NOT NULL AND p.expiration_date <= CURRENT_DATE + INTERVAL '14 days'");
     }
 
-    const allowedSorts = { name: 'p.name', stock: 'p.stock', sale_price: 'p.sale_price', created_at: 'p.created_at' };
+    const allowedSorts = { name: 'p.name', stock: 'p.stock', sale_price: 'p.sale_price', created_at: 'p.created_at', expiration_date: 'p.expiration_date' };
     const sortCol = allowedSorts[sort] || 'p.name';
     const sortDir = order === 'desc' ? 'DESC' : 'ASC';
 
@@ -38,7 +40,10 @@ const list = async (req, res) => {
     params.push(parseInt(limit), offset);
     const query = `
       SELECT p.*, c.name AS category_name, c.color AS category_color,
-             (p.stock <= p.min_stock) AS low_stock
+             (p.stock <= p.min_stock) AS low_stock,
+             (p.expiration_date IS NOT NULL AND p.expiration_date < CURRENT_DATE) AS expired,
+             (p.expiration_date IS NOT NULL AND p.expiration_date >= CURRENT_DATE
+               AND p.expiration_date <= CURRENT_DATE + INTERVAL '14 days') AS expiring_soon
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
       ${where}
@@ -71,7 +76,10 @@ const list = async (req, res) => {
 const getOne = async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT p.*, c.name AS category_name, c.color AS category_color
+      SELECT p.*, c.name AS category_name, c.color AS category_color,
+             (p.expiration_date IS NOT NULL AND p.expiration_date < CURRENT_DATE) AS expired,
+             (p.expiration_date IS NOT NULL AND p.expiration_date >= CURRENT_DATE
+               AND p.expiration_date <= CURRENT_DATE + INTERVAL '14 days') AS expiring_soon
       FROM products p LEFT JOIN categories c ON c.id = p.category_id
       WHERE p.id = $1
     `, [req.params.id]);
@@ -100,19 +108,20 @@ const getBySku = async (req, res) => {
 // POST /api/products
 const create = async (req, res) => {
   try {
-    const { name, sku, category_id, sale_price, cost_price, stock, min_stock, image_url } = req.body;
+    const { name, sku, category_id, sale_price, cost_price, stock, min_stock, image_url, expiration_date } = req.body;
     if (!name || !sku) return res.status(400).json({ error: 'Nombre y SKU son requeridos' });
 
     const skuCheck = await pool.query('SELECT id FROM products WHERE sku = $1', [sku.trim()]);
     if (skuCheck.rows[0]) return res.status(409).json({ error: 'El SKU ya existe' });
 
     const { rows } = await pool.query(`
-      INSERT INTO products (name, sku, category_id, sale_price, cost_price, stock, min_stock, image_url)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      INSERT INTO products (name, sku, category_id, sale_price, cost_price, stock, min_stock, image_url, expiration_date)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING *
     `, [name.trim(), sku.trim().toUpperCase(), category_id || null,
         parseFloat(sale_price) || 0, parseFloat(cost_price) || 0,
-        parseInt(stock) || 0, parseInt(min_stock) || 5, image_url || null]);
+        parseInt(stock) || 0, parseInt(min_stock) || 5, image_url || null,
+        expiration_date || null]);
 
     // Log movement if initial stock > 0
     if (parseInt(stock) > 0) {
@@ -132,7 +141,7 @@ const create = async (req, res) => {
 // PUT /api/products/:id
 const update = async (req, res) => {
   try {
-    const { name, sku, category_id, sale_price, cost_price, stock, min_stock, image_url, is_active } = req.body;
+    const { name, sku, category_id, sale_price, cost_price, stock, min_stock, image_url, is_active, expiration_date } = req.body;
     const { rows } = await pool.query(`
       UPDATE products SET
         name = COALESCE($1, name),
@@ -143,14 +152,15 @@ const update = async (req, res) => {
         stock = COALESCE($6, stock),
         min_stock = COALESCE($7, min_stock),
         image_url = COALESCE($8, image_url),
-        is_active = COALESCE($9, is_active)
-      WHERE id = $10 RETURNING *
+        is_active = COALESCE($9, is_active),
+        expiration_date = COALESCE($10, expiration_date)
+      WHERE id = $11 RETURNING *
     `, [name?.trim(), sku?.trim().toUpperCase(), category_id,
         sale_price != null ? parseFloat(sale_price) : null,
         cost_price != null ? parseFloat(cost_price) : null,
         stock != null ? parseInt(stock) : null,
         min_stock != null ? parseInt(min_stock) : null,
-        image_url, is_active, req.params.id]);
+        image_url, is_active, expiration_date || null, req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json({ product: stripCost(rows[0], req.user.role === 'admin') });
   } catch (err) {

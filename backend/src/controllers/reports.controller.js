@@ -5,10 +5,13 @@ const dashboard = async (req, res) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
 
-    const [productsRes, stockValueRes, lowStockRes, salesTodayRes, activityRes] = await Promise.all([
+    const [productsRes, stockValueRes, lowStockRes, expiringRes, salesTodayRes, activityRes] = await Promise.all([
       pool.query("SELECT COUNT(*)::int FROM products WHERE is_active = true"),
       pool.query("SELECT COALESCE(SUM(sale_price * stock), 0)::numeric AS total FROM products WHERE is_active = true"),
       pool.query("SELECT COUNT(*)::int FROM products WHERE is_active = true AND stock <= min_stock"),
+      pool.query(`SELECT COUNT(*)::int FROM products
+                  WHERE is_active = true AND expiration_date IS NOT NULL
+                    AND expiration_date <= CURRENT_DATE + INTERVAL '14 days'`),
       pool.query(`SELECT COALESCE(SUM(total),0)::numeric AS total, COUNT(*)::int AS count
                   FROM sales WHERE DATE(created_at) = $1 AND status = 'completada'`, [today]),
       pool.query(`
@@ -29,6 +32,7 @@ const dashboard = async (req, res) => {
       total_products: productsRes.rows[0].count,
       stock_value: parseFloat(stockValueRes.rows[0].total),
       low_stock_count: lowStockRes.rows[0].count,
+      expiring_count: expiringRes.rows[0].count,
       sales_today: { total: parseFloat(salesTodayRes.rows[0].total), count: salesTodayRes.rows[0].count },
       recent_activity: activityRes.rows
     });

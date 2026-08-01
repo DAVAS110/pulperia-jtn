@@ -22,6 +22,15 @@ export const fmtDateTime = (d) =>
     minute: "2-digit",
   });
 
+// Días restantes hasta una fecha (negativo si ya pasó). Usado para caducidad.
+export const daysUntil = (d) => {
+  if (!d) return null;
+  const target = typeof d === "string" ? new Date(d.slice(0, 10) + "T00:00:00") : d;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+};
+
 export const timeAgo = (d) => {
   const diff = Math.floor((Date.now() - new Date(d)) / 1000);
   if (diff < 60) return "Ahora mismo";

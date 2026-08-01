@@ -60,7 +60,7 @@ const NAV = [
 export default function AppLayout({ children }) {
   const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [lowStockCount, setLowStockCount] = useState(0);
+  const [alertsCount, setAlertsCount] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
@@ -70,7 +70,9 @@ export default function AppLayout({ children }) {
   useEffect(() => {
     reportsAPI
       .dashboard()
-      .then(({ data }) => setLowStockCount(data.low_stock_count || 0))
+      .then(({ data }) =>
+        setAlertsCount((data.low_stock_count || 0) + (data.expiring_count || 0)),
+      )
       .catch(() => {});
   }, [location.pathname]);
 
@@ -123,8 +125,8 @@ export default function AppLayout({ children }) {
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
-                {item.badge && lowStockCount > 0 && (
-                  <span className="nav-badge">{lowStockCount}</span>
+                {item.badge && alertsCount > 0 && (
+                  <span className="nav-badge">{alertsCount}</span>
                 )}
               </NavLink>
             ))}
@@ -176,11 +178,11 @@ export default function AppLayout({ children }) {
             {/* Cierre de caja — visible para todos */}
             <DailyClosure />
 
-            {/* Alerta bajo stock */}
-            {lowStockCount > 0 && (
+            {/* Alertas: stock bajo + productos por caducar */}
+            {alertsCount > 0 && (
               <NavLink to="/alertas" style={{ textDecoration: "none" }}>
                 <span className="badge badge-red">
-                  ⚠️ {lowStockCount} bajo stock
+                  ⚠️ {alertsCount} alerta{alertsCount !== 1 ? "s" : ""}
                 </span>
               </NavLink>
             )}
