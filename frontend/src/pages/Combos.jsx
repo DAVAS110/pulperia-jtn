@@ -224,6 +224,7 @@ export default function Combos() {
                     <img
                       src={c.image_url}
                       alt={c.name}
+                      loading="lazy"
                       style={{
                         width: "100%",
                         height: "100%",

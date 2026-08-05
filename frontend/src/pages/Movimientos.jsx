@@ -368,6 +368,7 @@ export default function Movimientos() {
                           <img
                             src={p.image_url}
                             alt=""
+                            loading="lazy"
                             style={{
                               width: "100%",
                               height: "100%",

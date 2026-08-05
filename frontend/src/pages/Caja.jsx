@@ -376,6 +376,7 @@ export default function Caja() {
                       <img
                         src={p.image_url}
                         alt={p.name}
+                        loading="lazy"
                         style={{
                           width: "100%",
                           height: "100%",
@@ -560,6 +561,7 @@ export default function Caja() {
                       <img
                         src={p.image_url}
                         alt={p.name}
+                        loading="lazy"
                         style={{
                           width: "100%",
                           height: "100%",
@@ -668,6 +670,7 @@ export default function Caja() {
                       <img
                         src={item.image_url}
                         alt={item.name}
+                        loading="lazy"
                         style={{
                           width: "100%",
                           height: "100%",

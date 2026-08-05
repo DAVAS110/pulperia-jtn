@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
-import { reportsAPI } from "../../services/api";
+import useAppStore from "../../store/appStore";
 import DailyClosure from "../DailyClosure";
 import {
   FiBarChart2,
@@ -61,6 +61,7 @@ const NAV = [
 
 export default function AppLayout({ children }) {
   const { user, logout, isAdmin } = useAuthStore();
+  const fetchDashboard = useAppStore((s) => s.fetchDashboard);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alertsCount, setAlertsCount] = useState(0);
   const location = useLocation();
@@ -70,13 +71,12 @@ export default function AppLayout({ children }) {
   }, [location.pathname]);
 
   useEffect(() => {
-    reportsAPI
-      .dashboard()
-      .then(({ data }) =>
-        setAlertsCount((data.low_stock_count || 0) + (data.expiring_count || 0)),
-      )
-      .catch(() => {});
-  }, [location.pathname]);
+    fetchDashboard().then((data) => {
+      if (data) {
+        setAlertsCount((data.low_stock_count || 0) + (data.expiring_count || 0));
+      }
+    });
+  }, [location.pathname, fetchDashboard]);
 
   const initials =
     user?.name

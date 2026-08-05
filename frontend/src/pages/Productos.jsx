@@ -242,6 +242,7 @@ export default function Productos() {
                             <img
                               src={p.image_url}
                               alt=""
+                              loading="lazy"
                               style={{
                                 width: "100%",
                                 height: "100%",
@@ -369,7 +370,7 @@ export default function Productos() {
               <div className="p-card" key={p.id}>
                 <div className="p-thumb">
                   {p.image_url ? (
-                    <img src={p.image_url} alt="" />
+                    <img src={p.image_url} alt="" loading="lazy" />
                   ) : (
                     <FiBox />
                   )}

@@ -1,25 +1,28 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./index.css";
 import useAuthStore from "./store/authStore";
-import { ToastContainer } from "./components/ui";
+import { ToastContainer, Spinner } from "./components/ui";
 import AppLayout from "./components/layout/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
-import Productos from "./pages/Productos";
-import Categorias from "./pages/Categorias";
-import Movimientos from "./pages/Movimientos";
-import Alertas from "./pages/Alertas";
-import Caja from "./pages/Caja";
-import Ventas from "./pages/Ventas";
-import QRPage from "./pages/QRPage";
-import Configuracion from "./pages/Configuracion";
-import Combos from "./pages/Combos";
-import Pendientes from "./pages/Pendientes";
-import Tesoreria from "./pages/Tesoreria";
 import { useKeepAlive } from "./hooks/useKeepAlive";
 import { InstallBanner, UpdatePrompt } from "./components/PWAComponents";
+
+// Rutas menos visitadas: se descargan solo cuando se navega a ellas,
+// en vez de sumarse al bundle inicial que carga todo el mundo.
+const Productos = lazy(() => import("./pages/Productos"));
+const Categorias = lazy(() => import("./pages/Categorias"));
+const Movimientos = lazy(() => import("./pages/Movimientos"));
+const Alertas = lazy(() => import("./pages/Alertas"));
+const Caja = lazy(() => import("./pages/Caja"));
+const Ventas = lazy(() => import("./pages/Ventas"));
+const QRPage = lazy(() => import("./pages/QRPage"));
+const Configuracion = lazy(() => import("./pages/Configuracion"));
+const Combos = lazy(() => import("./pages/Combos"));
+const Pendientes = lazy(() => import("./pages/Pendientes"));
+const Tesoreria = lazy(() => import("./pages/Tesoreria"));
 
 function PrivateRoute({ children }) {
   const { user } = useAuthStore();
@@ -61,35 +64,37 @@ function App() {
             element={
               <PrivateRoute>
                 <AppLayout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/productos" element={<Productos />} />
-                    <Route path="/categorias" element={<Categorias />} />
-                    <Route path="/movimientos" element={<Movimientos />} />
-                    <Route path="/alertas" element={<Alertas />} />
-                    <Route path="/caja" element={<Caja />} />
-                    <Route path="/ventas" element={<Ventas />} />
-                    <Route path="/qr" element={<QRPage />} />
-                    <Route
-                      path="/configuracion"
-                      element={
-                        <AdminRoute>
-                          <Configuracion />
-                        </AdminRoute>
-                      }
-                    />
-                    <Route path="/combos" element={<Combos />} />
-                    <Route path="/pendientes" element={<Pendientes />} />
-                    <Route
-                      path="/tesoreria"
-                      element={
-                        <AdminRoute>
-                          <Tesoreria />
-                        </AdminRoute>
-                      }
-                    />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
+                  <Suspense fallback={<Spinner />}>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/productos" element={<Productos />} />
+                      <Route path="/categorias" element={<Categorias />} />
+                      <Route path="/movimientos" element={<Movimientos />} />
+                      <Route path="/alertas" element={<Alertas />} />
+                      <Route path="/caja" element={<Caja />} />
+                      <Route path="/ventas" element={<Ventas />} />
+                      <Route path="/qr" element={<QRPage />} />
+                      <Route
+                        path="/configuracion"
+                        element={
+                          <AdminRoute>
+                            <Configuracion />
+                          </AdminRoute>
+                        }
+                      />
+                      <Route path="/combos" element={<Combos />} />
+                      <Route path="/pendientes" element={<Pendientes />} />
+                      <Route
+                        path="/tesoreria"
+                        element={
+                          <AdminRoute>
+                            <Tesoreria />
+                          </AdminRoute>
+                        }
+                      />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Suspense>
                 </AppLayout>
               </PrivateRoute>
             }

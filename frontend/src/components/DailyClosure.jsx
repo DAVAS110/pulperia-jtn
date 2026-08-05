@@ -11,6 +11,31 @@ import {
   FiRepeat,
 } from "react-icons/fi";
 
+// jsPDF solo lo necesita este modal (admin) — se carga bajo demanda
+// en vez de bloquear la carga inicial de toda la app para todos los usuarios.
+let pdfLibsPromise = null;
+const loadScript = (src) =>
+  new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+const loadPdfLibs = () => {
+  if (window.jspdf) return Promise.resolve();
+  if (!pdfLibsPromise) {
+    pdfLibsPromise = loadScript(
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    ).then(() =>
+      loadScript(
+        "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js",
+      ),
+    );
+  }
+  return pdfLibsPromise;
+};
+
 const MOVEMENT_LABELS = {
   entrada: "Entrada",
   salida: "Salida",
@@ -369,7 +394,12 @@ export default function DailyClosure() {
     return doc;
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
+    try {
+      await loadPdfLibs();
+    } catch {
+      return toast.error("No se pudo cargar el generador de PDF");
+    }
     const doc = generatePDF();
     if (!doc) return;
     const suffix = dateFrom === dateTo ? dateFrom : `${dateFrom}_${dateTo}`;
@@ -379,9 +409,18 @@ export default function DailyClosure() {
 
   const sendEmailFn = async () => {
     if (!email.trim()) return toast.error("Ingresa un email destinatario");
-    const doc = generatePDF();
-    if (!doc) return;
     setSending(true);
+    try {
+      await loadPdfLibs();
+    } catch {
+      setSending(false);
+      return toast.error("No se pudo cargar el generador de PDF");
+    }
+    const doc = generatePDF();
+    if (!doc) {
+      setSending(false);
+      return;
+    }
     const isRange = dateFrom !== dateTo;
     const periodLabel = isRange
       ? `${fmtDate(dateFrom)} al ${fmtDate(dateTo)}`

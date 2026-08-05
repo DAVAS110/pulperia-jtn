@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { reportsAPI } from "../services/api";
+import useAppStore from "../store/appStore";
 import { StatCard, Card, CardHeader, CardBody } from "../components/ui";
 import { StatCardSkeleton, ActivitySkeleton } from "../components/Skeletons";
 import { fmt, timeAgo, MOVEMENT_COLORS } from "../utils/helpers";
@@ -14,16 +14,16 @@ import {
 } from "react-icons/fi";
 
 export default function Dashboard() {
+  const fetchDashboard = useAppStore((s) => s.fetchDashboard);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    reportsAPI
-      .dashboard()
-      .then(({ data }) => setData(data))
+    fetchDashboard()
+      .then((data) => setData(data))
       .finally(() => setLoading(false));
-  }, []);
+  }, [fetchDashboard]);
 
   return (
     <>
