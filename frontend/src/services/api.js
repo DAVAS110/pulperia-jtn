@@ -61,8 +61,6 @@ export const salesAPI = {
 
 export const reportsAPI = {
   dashboard: () => api.get("/reports/dashboard"),
-  sales: (params) => api.get("/reports/sales", { params }),
-  inventory: (params) => api.get("/reports/inventory", { params }),
   daily: (params) => api.get("/reports/daily", { params }),
   sendEmail: (data) => api.post("/reports/send-email", data),
 };

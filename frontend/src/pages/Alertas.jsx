@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { productsAPI } from '../services/api';
 import { Spinner } from '../components/ui';
 import { fmtDate, daysUntil } from '../utils/helpers';
+import { FiAlertTriangle, FiClock, FiCheckCircle } from 'react-icons/fi';
 
 export default function Alertas() {
   const [lowStock, setLowStock] = useState([]);
@@ -30,45 +31,42 @@ export default function Alertas() {
     <>
       <div className="page-header">
         <div>
-          <h1>⚠️ Alertas</h1>
+          <h1><FiAlertTriangle /> Alertas</h1>
           <p>{total} producto(s) requieren atención</p>
         </div>
       </div>
 
       {total === 0 ? (
         <div className="card" style={{ padding: 60, textAlign: 'center' }}>
-          <div style={{ fontSize: 52, marginBottom: 14 }}>✅</div>
-          <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>¡Todo en orden!</div>
-          <div style={{ color: 'var(--text3)', fontSize: 14 }}>No hay productos con stock bajo ni por caducar en este momento.</div>
+          <div style={{ fontSize: 40, marginBottom: 14, color: 'var(--green)', display: 'flex', justifyContent: 'center' }}><FiCheckCircle /></div>
+          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>¡Todo en orden!</div>
+          <div style={{ color: 'var(--text3)', fontSize: 13.5 }}>No hay productos con stock bajo ni por caducar en este momento.</div>
         </div>
       ) : (
         <>
           {lowStock.length > 0 && (
-            <>
-              <h3 style={{ fontSize: 14, margin: '0 0 10px' }}>Stock Bajo ({lowStock.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 700, marginBottom: 28 }}>
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Stock Bajo ({lowStock.length})
+              </h3>
+              <div className="card" style={{ maxWidth: 700 }}>
                 {lowStock.map((p) => {
                   const pct = Math.min(100, (p.stock / p.min_stock) * 100);
                   return (
-                    <div key={p.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 16,
-                      background: 'var(--red-light)', border: '1px solid var(--danger-border)',
-                      borderRadius: 12, padding: '16px 18px'
-                    }}>
-                      <span style={{ fontSize: 28 }}>⚠️</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{p.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text2)', margin: '2px 0' }}>
+                    <div key={p.id} className="alert-row-item">
+                      <span className="alert-row-icon"><FiAlertTriangle /></span>
+                      <div className="alert-row-main">
+                        <div className="alert-row-name">{p.name}</div>
+                        <div className="alert-row-meta">
                           {p.sku} {p.category_name ? `· ${p.category_name}` : ''}
                         </div>
-                        <div style={{ background: 'rgba(192,57,43,0.15)', borderRadius: 4, height: 6, marginTop: 8, overflow: 'hidden' }}>
-                          <div style={{ background: 'var(--red)', height: '100%', width: `${pct}%`, borderRadius: 4, transition: 'width 0.5s' }} />
+                        <div className="alert-row-bar">
+                          <div className="alert-row-bar-fill" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--red)', lineHeight: 1 }}>{p.stock}</div>
-                        <div style={{ fontSize: 11, color: 'var(--red)', marginBottom: 8 }}>mín: {p.min_stock}</div>
-                        <button className="btn btn-sm btn-accent" onClick={() => navigate(`/movimientos?new=entrada`)}>
+                      <div className="alert-row-side">
+                        <div className="alert-row-figure">{p.stock} <span>/ mín {p.min_stock}</span></div>
+                        <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/movimientos?new=entrada`)}>
                           + Reponer
                         </button>
                       </div>
@@ -76,39 +74,31 @@ export default function Alertas() {
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
 
           {expiring.length > 0 && (
-            <>
-              <h3 style={{ fontSize: 14, margin: '0 0 10px' }}>Por Caducar ({expiring.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 700 }}>
+            <div>
+              <h3 style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Por Caducar ({expiring.length})
+              </h3>
+              <div className="card" style={{ maxWidth: 700 }}>
                 {expiring.map((p) => {
                   const days = daysUntil(p.expiration_date);
                   return (
-                    <div key={p.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 16,
-                      background: 'var(--red-light)', border: '1px solid var(--danger-border)',
-                      borderRadius: 12, padding: '16px 18px'
-                    }}>
-                      <span style={{ fontSize: 28 }}>⏰</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{p.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text2)', margin: '2px 0' }}>
-                          {p.sku} {p.category_name ? `· ${p.category_name}` : ''}
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6 }}>
-                          Vence: {fmtDate(p.expiration_date)}
+                    <div key={p.id} className="alert-row-item">
+                      <span className="alert-row-icon"><FiClock /></span>
+                      <div className="alert-row-main">
+                        <div className="alert-row-name">{p.name}</div>
+                        <div className="alert-row-meta">
+                          {p.sku} {p.category_name ? `· ${p.category_name}` : ''} · Vence: {fmtDate(p.expiration_date)}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--red)', lineHeight: 1 }}>
+                      <div className="alert-row-side">
+                        <div className="alert-row-figure">
                           {days < 0 ? 'Vencido' : `${days} día(s)`}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--red)', marginBottom: 8 }}>
-                          Stock: {p.stock}
-                        </div>
-                        <button className="btn btn-sm btn-accent" onClick={() => navigate(`/productos`)}>
+                        <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/productos`)}>
                           Ver producto
                         </button>
                       </div>
@@ -116,7 +106,7 @@ export default function Alertas() {
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
         </>
       )}

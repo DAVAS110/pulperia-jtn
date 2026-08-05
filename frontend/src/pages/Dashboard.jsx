@@ -3,16 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { reportsAPI } from "../services/api";
 import { StatCard, Card, CardHeader, CardBody } from "../components/ui";
 import { StatCardSkeleton, ActivitySkeleton } from "../components/Skeletons";
-import TreasuryPanel from "../components/treasury/TreasuryPanel";
 import { fmt, timeAgo, MOVEMENT_COLORS } from "../utils/helpers";
 import {
   FiShoppingCart,
   FiBox,
-  FiDollarSign,
   FiAlertTriangle,
   FiFileText,
   FiRepeat,
-  FiTrendingUp,
   FiClock,
 } from "react-icons/fi";
 
@@ -40,10 +37,9 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="stats-grid">
+      <div className="stats-grid stats-grid-3">
         {loading ? (
           <>
-            <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
@@ -51,17 +47,17 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard
-              icon={<FiBox />}
-              label="Total Productos"
-              value={data?.total_products ?? 0}
-              sub="Productos activos"
-              iconBg="#dbeafe"
+              icon={<FiFileText />}
+              label="Ventas de Hoy"
+              value={fmt(data?.sales_today?.total)}
+              sub={`${data?.sales_today?.count ?? 0} transacciones`}
+              iconBg="#fef3c7"
             />
             <StatCard
-              icon={<FiDollarSign />}
+              icon={<FiBox />}
               label="Valor del Stock"
               value={fmt(data?.stock_value)}
-              sub="Precio venta × cantidad"
+              sub={`${data?.total_products ?? 0} productos activos`}
               iconBg="#d4eddf"
             />
             <StatCard
@@ -78,13 +74,6 @@ export default function Dashboard() {
               }
               sub="Necesitan reposición"
               iconBg="#fde8e6"
-            />
-            <StatCard
-              icon={<FiFileText />}
-              label="Ventas de Hoy"
-              value={fmt(data?.sales_today?.total)}
-              sub={`${data?.sales_today?.count ?? 0} transacciones`}
-              iconBg="#fef3c7"
             />
           </>
         )}
@@ -191,9 +180,9 @@ export default function Dashboard() {
                   to: "/movimientos",
                 },
                 {
-                  icon: <FiTrendingUp />,
-                  label: "Ver Reportes",
-                  to: "/reportes",
+                  icon: <FiFileText />,
+                  label: "Ver Ventas",
+                  to: "/ventas",
                 },
               ].map((a) => (
                 <button
@@ -210,11 +199,11 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          {!loading && data?.low_stock_count > 0 && (
+          {!loading && (data?.low_stock_count > 0 || data?.expiring_count > 0) && (
             <Card style={{ border: "1.5px solid var(--danger-border)" }}>
               <CardHeader style={{ background: "var(--red-light)" }}>
                 <h3 style={{ color: "var(--red)" }}>
-                  <FiAlertTriangle /> Alertas de Stock
+                  <FiAlertTriangle /> Alertas
                 </h3>
                 <button
                   className="btn btn-sm btn-danger"
@@ -223,43 +212,31 @@ export default function Dashboard() {
                   Ver todo
                 </button>
               </CardHeader>
-              <CardBody>
-                <p style={{ fontSize: 13.5, color: "var(--text2)" }}>
-                  <strong>{data.low_stock_count}</strong> producto
-                  {data.low_stock_count !== 1 ? "s" : ""} con stock bajo el
-                  mínimo.
-                </p>
-              </CardBody>
-            </Card>
-          )}
-
-          {!loading && data?.expiring_count > 0 && (
-            <Card style={{ border: "1.5px solid var(--danger-border)" }}>
-              <CardHeader style={{ background: "var(--red-light)" }}>
-                <h3 style={{ color: "var(--red)" }}>
-                  <FiClock /> Productos por Caducar
-                </h3>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => navigate("/alertas")}
-                >
-                  Ver todo
-                </button>
-              </CardHeader>
-              <CardBody>
-                <p style={{ fontSize: 13.5, color: "var(--text2)" }}>
-                  <strong>{data.expiring_count}</strong> producto
-                  {data.expiring_count !== 1 ? "s" : ""} vencido
-                  {data.expiring_count !== 1 ? "s" : ""} o por vencer en los
-                  próximos 14 días.
-                </p>
+              <CardBody className="alert-list">
+                {data.low_stock_count > 0 && (
+                  <div className="alert-row">
+                    <span>
+                      <FiAlertTriangle /> Producto
+                      {data.low_stock_count !== 1 ? "s" : ""} con stock bajo el
+                      mínimo
+                    </span>
+                    <span className="alert-count">{data.low_stock_count}</span>
+                  </div>
+                )}
+                {data.expiring_count > 0 && (
+                  <div className="alert-row">
+                    <span>
+                      <FiClock /> Vencido{data.expiring_count !== 1 ? "s" : ""}{" "}
+                      o por vencer en 14 días
+                    </span>
+                    <span className="alert-count">{data.expiring_count}</span>
+                  </div>
+                )}
               </CardBody>
             </Card>
           )}
         </div>
       </div>
-
-      <TreasuryPanel />
     </>
   );
 }

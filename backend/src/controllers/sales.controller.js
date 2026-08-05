@@ -44,11 +44,15 @@ const list = async (req, res) => {
 
     const countParams = params.slice(0, -2);
     const countRes = await pool.query(
-      `SELECT COUNT(*) FROM sales s ${where}`,
+      `SELECT COUNT(*)::int AS count, COALESCE(SUM(s.total),0)::numeric AS sum FROM sales s ${where}`,
       countParams,
     );
 
-    res.json({ sales: rows, total: parseInt(countRes.rows[0].count) });
+    res.json({
+      sales: rows,
+      total: countRes.rows[0].count,
+      total_amount: parseFloat(countRes.rows[0].sum),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al obtener ventas" });

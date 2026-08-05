@@ -75,9 +75,14 @@ router.post(
   debts.pay,
 );
 
-// TREASURY
-router.get("/treasury", authenticate, treasury.getSummary);
-router.get("/treasury/movements", authenticate, treasury.listMovements);
+// TREASURY (admin only — datos financieros sensibles)
+router.get("/treasury", authenticate, requireAdmin, treasury.getSummary);
+router.get(
+  "/treasury/movements",
+  authenticate,
+  requireAdmin,
+  treasury.listMovements,
+);
 router.post(
   "/treasury/withdraw",
   authenticate,
@@ -97,14 +102,13 @@ router.post(
 
 // REPORTS
 router.get("/reports/dashboard", authenticate, reports.dashboard);
-router.get("/reports/sales", authenticate, reports.salesReport);
-router.get(
-  "/reports/inventory",
+// Cierre de caja incluye saldos de tesorería — admin only
+router.get("/reports/daily", authenticate, requireAdmin, daily.dailyReport);
+router.post(
+  "/reports/send-email",
   authenticate,
   requireAdmin,
-  reports.inventoryReport,
+  daily.sendEmail,
 );
-router.get("/reports/daily", authenticate, daily.dailyReport);
-router.post("/reports/send-email", authenticate, daily.sendEmail);
 
 module.exports = router;

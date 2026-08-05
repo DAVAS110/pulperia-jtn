@@ -1,9 +1,15 @@
 import React, { useState } from "react";
 import { reportsAPI } from "../services/api";
-import { Modal } from "./ui";
+import { Modal, StatCard } from "./ui";
 import { toast } from "../store/toastStore";
 import { fmt, fmtDate, fmtDateTime } from "../utils/helpers";
-import { FiDollarSign, FiSmartphone, FiMail } from "react-icons/fi";
+import {
+  FiDollarSign,
+  FiSmartphone,
+  FiMail,
+  FiAlertTriangle,
+  FiRepeat,
+} from "react-icons/fi";
 
 const MOVEMENT_LABELS = {
   entrada: "Entrada",
@@ -20,6 +26,13 @@ const localDateStr = (d = new Date()) => {
     String(d.getMonth() + 1).padStart(2, "0"),
     String(d.getDate()).padStart(2, "0"),
   ].join("-");
+};
+
+// Resta días en hora local (evita el corrimiento de toISOString(), que usa UTC)
+const daysAgoLocal = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return localDateStr(d);
 };
 
 export default function DailyClosure() {
@@ -128,10 +141,33 @@ export default function DailyClosure() {
     const safeGeneratedAt = safeDateStr(fmtDateTime(data.generated_at));
     const safeGeneratedBy = safeDateStr(data.generated_by || "");
 
+    // Paleta consistente con la app (celeste/azul), un solo acento —
+    // el color se reserva para lo que necesita atención (alertas de stock).
+    const ACCENT = [14, 165, 233]; // --accent
+    const ACCENT2 = [2, 132, 199]; // --accent2
+    const ACCENT_LIGHT = [230, 248, 255]; // --accent-light
+    const TEXT = [7, 34, 39]; // --text
+    const TEXT3 = [107, 152, 166]; // --text3
+    const RED = [192, 57, 43]; // --red
+    const RED_LIGHT = [253, 232, 230]; // --red-light
+    const GREEN = [45, 122, 79]; // --green
+
+    const sectionHeader = (label) => {
+      checkSpace(18);
+      doc.setFillColor(...ACCENT_LIGHT);
+      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
+      doc.setFontSize(10.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...ACCENT2);
+      doc.text(label, 18, y + 5.5);
+      doc.setTextColor(...TEXT);
+      y += 12;
+    };
+
     // ── HEADER ───────────────────────────────────────────────
-    doc.setFillColor(2, 132, 199); // --accent2 celeste
+    doc.setFillColor(...ACCENT2);
     doc.rect(0, 0, W, 32, "F");
-    doc.setFillColor(14, 165, 233); // --accent celeste
+    doc.setFillColor(...ACCENT);
     doc.rect(0, 28, W, 4, "F");
 
     doc.setTextColor(255, 255, 255);
@@ -148,7 +184,7 @@ export default function DailyClosure() {
       22,
     );
     doc.setFontSize(8);
-    doc.setTextColor(200, 200, 200);
+    doc.setTextColor(220, 240, 250);
     doc.text(
       `Generado: ${safeGeneratedAt} | Por: ${safeGeneratedBy}`,
       W - 14,
@@ -157,47 +193,30 @@ export default function DailyClosure() {
     );
 
     y = 42;
-    doc.setTextColor(26, 18, 8);
+    doc.setTextColor(...TEXT);
 
-    // ── SECCION 1: RESUMEN ────────────────────────────────────
-    doc.setFillColor(230, 248, 255); // --accent-light
-    doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(14, 165, 233); // --accent celeste
-    doc.text(isRange ? "RESUMEN DEL PERIODO" : "RESUMEN DEL DIA", 18, y + 5.5);
-    doc.setTextColor(26, 18, 8);
-    y += 13;
-
-    const cardW = (W - 28 - 8) / 3;
+    // ── RESUMEN ────────────────────────────────────────────────
     const lowStockCount = data.low_stock?.length || 0;
+    const cardW = (W - 28 - 8) / 3;
     const cards = [
-      {
-        label: "Total Ventas",
-        value: pdfFmt(data.total_sales),
-        color: [14, 165, 233], // --accent celeste
-      },
-      {
-        label: "Transacciones",
-        value: String(data.total_count),
-        color: [45, 122, 79],
-      },
+      { label: "Total Ventas", value: pdfFmt(data.total_sales), color: ACCENT2 },
+      { label: "Transacciones", value: String(data.total_count), color: TEXT },
       {
         label: "Alertas Stock",
-        value: lowStockCount > 0 ? `! ${lowStockCount}` : "OK",
-        color: lowStockCount > 0 ? [192, 57, 43] : [45, 122, 79],
+        value: lowStockCount > 0 ? `${lowStockCount}` : "OK",
+        color: lowStockCount > 0 ? RED : GREEN,
       },
     ];
 
     cards.forEach((card, i) => {
       const x = 14 + i * (cardW + 4);
       doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(...card.color);
-      doc.setLineWidth(0.5);
+      doc.setDrawColor(225, 235, 240);
+      doc.setLineWidth(0.4);
       doc.roundedRect(x, y, cardW, 18, 2, 2, "FD");
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 90, 70);
+      doc.setTextColor(...TEXT3);
       doc.text(card.label, x + cardW / 2, y + 6, { align: "center" });
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
@@ -212,158 +231,73 @@ export default function DailyClosure() {
       head: [["Metodo de Pago", "Transacciones", "Total Recaudado"]],
       body: [
         ...(data.sales_by_method || []).map((s) => [
-          s.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE",
+          s.payment_method === "efectivo" ? "Efectivo" : "SINPE",
           s.count.toString(),
           pdfFmt(s.total),
         ]),
         ["TOTAL", String(data.total_count), pdfFmt(data.total_sales)],
       ],
       margin: { left: 14, right: 14 },
-      styles: { fontSize: 10, cellPadding: 4 },
-      headStyles: { fillColor: [45, 21, 7], textColor: 255, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [250, 247, 242] },
+      styles: { fontSize: 10, cellPadding: 4, textColor: TEXT },
+      headStyles: { fillColor: ACCENT2, textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [244, 251, 255] },
       didParseCell: (d) => {
         if (d.row.index === (data.sales_by_method?.length || 0)) {
           d.cell.styles.fontStyle = "bold";
-          d.cell.styles.fillColor = [200, 87, 10];
-          d.cell.styles.textColor = 255;
+          d.cell.styles.fillColor = ACCENT_LIGHT;
+          d.cell.styles.textColor = ACCENT2;
         }
       },
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // ── SECCION 2: TESORERIA ──────────────────────────────────
-    checkSpace(40);
-    doc.setFillColor(245, 240, 232);
-    doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(45, 122, 79);
-    doc.text("SALDO DE TESORERIA", 18, y + 5.5);
-    doc.setTextColor(26, 18, 8);
-    y += 11;
-
+    // ── TESORERIA ──────────────────────────────────────────────
+    sectionHeader("SALDO DE TESORERIA");
     doc.autoTable({
       startY: y,
       head: [["Cuenta", "Saldo Actual"]],
       body: (data.treasury || []).map((t) => [
-        t.type === "caja" ? "[EFE] Caja Fisica" : "[SIN] Cuenta SINPE",
+        t.type === "caja" ? "Caja Fisica" : "Cuenta SINPE",
         pdfFmt(t.balance),
       ]),
       margin: { left: 14, right: 14 },
-      styles: { fontSize: 10, cellPadding: 4 },
-      headStyles: {
-        fillColor: [45, 122, 79],
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      alternateRowStyles: { fillColor: [212, 237, 223] },
+      styles: { fontSize: 10, cellPadding: 4, textColor: TEXT },
+      headStyles: { fillColor: ACCENT2, textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [244, 251, 255] },
       columnStyles: { 1: { fontStyle: "bold", halign: "right" } },
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // ── SECCION 3: DETALLE DE VENTAS ──────────────────────────
+    // ── VENTAS DEL PERIODO ─────────────────────────────────────
+    // Una fila por venta (sin desglose de artículos) para un reporte conciso.
     if ((data.sales_detail || []).length > 0) {
-      checkSpace(20);
-      doc.setFillColor(245, 240, 232);
-      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(26, 95, 168);
-      doc.text(`DETALLE DE VENTAS (${data.sales_detail.length})`, 18, y + 5.5);
-      doc.setTextColor(26, 18, 8);
-      y += 13;
-
-      data.sales_detail.forEach((sale, idx) => {
-        checkSpace(30);
-
-        const safeHora = safeDateStr(sale.hora || "");
-        const safeSaleDate = sale.fecha
-          ? (() => {
-              const [yy, mm, dd] = sale.fecha.split("-");
-              const meses = [
-                "",
-                "ene",
-                "feb",
-                "mar",
-                "abr",
-                "may",
-                "jun",
-                "jul",
-                "ago",
-                "sep",
-                "oct",
-                "nov",
-                "dic",
-              ];
-              return `${parseInt(dd)} ${meses[parseInt(mm)]} `;
-            })()
-          : "";
-
-        const payLabel =
-          sale.payment_method === "efectivo" ? "[EFE] Efectivo" : "[SIN] SINPE";
-        const safeRef = sale.sinpe_description
-          ? `Ref: ${safeDateStr(sale.sinpe_description)}`
-          : "";
-
-        doc.setFillColor(219, 234, 254);
-        doc.roundedRect(14, y, W - 28, 8, 1, 1, "F");
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(26, 95, 168);
-        doc.text(`Venta #${String(idx + 1).padStart(3, "0")}`, 17, y + 5.5);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(60, 60, 60);
-        doc.text(`${safeSaleDate}${safeHora}`, 55, y + 5.5);
-        doc.text(payLabel, 95, y + 5.5);
-        if (safeRef) doc.text(safeRef, 130, y + 5.5);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(200, 87, 10);
-        doc.text(pdfFmt(sale.total), W - 14, y + 5.5, { align: "right" });
-        y += 10;
-
-        const items = (sale.items || []).filter(Boolean);
-        doc.autoTable({
-          startY: y,
-          body: items.map((item) => [
-            safeDateStr(item.product_name),
-            item.quantity.toString(),
-            pdfFmt(item.unit_price),
-            pdfFmt(item.subtotal),
-          ]),
-          margin: { left: 20, right: 14 },
-          styles: { fontSize: 8.5, cellPadding: 2.5 },
-          columnStyles: {
-            0: { cellWidth: "auto" },
-            1: { halign: "center", cellWidth: 20 },
-            2: { halign: "right", cellWidth: 30 },
-            3: { halign: "right", cellWidth: 30, fontStyle: "bold" },
-          },
-          alternateRowStyles: { fillColor: [248, 245, 240] },
-          theme: "plain",
-        });
-        y = doc.lastAutoTable.finalY + 6;
+      sectionHeader(`VENTAS (${data.sales_detail.length})`);
+      doc.autoTable({
+        startY: y,
+        head: [["#", "Fecha", "Hora", "Metodo", "Articulos", "Total"]],
+        body: data.sales_detail.map((sale, idx) => [
+          String(idx + 1).padStart(3, "0"),
+          sale.fecha ? safeDateStr(fmtDate(sale.fecha)) : "-",
+          safeDateStr(sale.hora || "-"),
+          sale.payment_method === "efectivo" ? "Efectivo" : "SINPE",
+          (sale.items || []).filter(Boolean).length.toString(),
+          pdfFmt(sale.total),
+        ]),
+        margin: { left: 14, right: 14 },
+        styles: { fontSize: 9, cellPadding: 3, textColor: TEXT },
+        headStyles: { fillColor: ACCENT2, textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [244, 251, 255] },
+        columnStyles: {
+          4: { halign: "center" },
+          5: { halign: "right", fontStyle: "bold" },
+        },
       });
-
-      y += 4;
+      y = doc.lastAutoTable.finalY + 10;
     }
 
-    // ── SECCION 4: MOVIMIENTOS DE INVENTARIO ──────────────────
+    // ── MOVIMIENTOS DE INVENTARIO ──────────────────────────────
     if ((data.movements || []).length > 0) {
-      checkSpace(20);
-      doc.setFillColor(245, 240, 232);
-      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(100, 50, 150);
-      doc.text(
-        `MOVIMIENTOS DE INVENTARIO (${data.movements.length})`,
-        18,
-        y + 5.5,
-      );
-      doc.setTextColor(26, 18, 8);
-      y += 11;
-
+      sectionHeader(`MOVIMIENTOS DE INVENTARIO (${data.movements.length})`);
       doc.autoTable({
         startY: y,
         head: [["Producto", "SKU", "Tipo", "Cantidad", "Motivo"]],
@@ -375,33 +309,29 @@ export default function DailyClosure() {
           safeDateStr(m.reason || "-"),
         ]),
         margin: { left: 14, right: 14 },
-        styles: { fontSize: 9, cellPadding: 2.5 },
-        headStyles: {
-          fillColor: [100, 50, 150],
-          textColor: 255,
-          fontStyle: "bold",
-        },
-        alternateRowStyles: { fillColor: [240, 230, 255] },
+        styles: { fontSize: 9, cellPadding: 2.5, textColor: TEXT },
+        headStyles: { fillColor: ACCENT2, textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [244, 251, 255] },
         columnStyles: { 3: { halign: "center", fontStyle: "bold" } },
       });
       y = doc.lastAutoTable.finalY + 10;
     }
 
-    // ── SECCION 5: BAJO STOCK ─────────────────────────────────
+    // ── BAJO STOCK ─────────────────────────────────────────────
     if ((data.low_stock || []).length > 0) {
-      checkSpace(20);
-      doc.setFillColor(253, 232, 230);
+      checkSpace(18);
+      doc.setFillColor(...RED_LIGHT);
       doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(192, 57, 43);
+      doc.setTextColor(...RED);
       doc.text(
         `ALERTA: ${data.low_stock.length} PRODUCTOS CON BAJO STOCK`,
         18,
         y + 5.5,
       );
-      doc.setTextColor(26, 18, 8);
-      y += 11;
+      doc.setTextColor(...TEXT);
+      y += 12;
 
       doc.autoTable({
         startY: y,
@@ -414,15 +344,11 @@ export default function DailyClosure() {
           p.min_stock.toString(),
         ]),
         margin: { left: 14, right: 14 },
-        styles: { fontSize: 9, cellPadding: 2.5 },
-        headStyles: {
-          fillColor: [192, 57, 43],
-          textColor: 255,
-          fontStyle: "bold",
-        },
-        alternateRowStyles: { fillColor: [253, 232, 230] },
+        styles: { fontSize: 9, cellPadding: 2.5, textColor: TEXT },
+        headStyles: { fillColor: RED, textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: RED_LIGHT },
         columnStyles: {
-          3: { halign: "center", textColor: [192, 57, 43], fontStyle: "bold" },
+          3: { halign: "center", textColor: RED, fontStyle: "bold" },
           4: { halign: "center" },
         },
       });
@@ -432,10 +358,10 @@ export default function DailyClosure() {
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setFillColor(45, 21, 7);
+      doc.setFillColor(2, 40, 51); // --sidebar-gradient-start
       doc.rect(0, 285, W, 12, "F");
       doc.setFontSize(8);
-      doc.setTextColor(200, 200, 200);
+      doc.setTextColor(210, 230, 235);
       doc.text(`Pulperia JTN - ${periodLabel}`, 14, 292);
       doc.text(`Pagina ${i} de ${totalPages}`, W - 14, 292, { align: "right" });
     }
@@ -588,48 +514,35 @@ export default function DailyClosure() {
             {[
               {
                 label: "Hoy",
-                fn: () => {
-                  const t = localDateStr();
-                  setDateFrom(t);
-                  setDateTo(t);
-                },
+                range: () => [localDateStr(), localDateStr()],
               },
               {
                 label: "Ayer",
-                fn: () => {
-                  const d = new Date();
-                  d.setDate(d.getDate() - 1);
-                  const s = d.toISOString().slice(0, 10);
-                  setDateFrom(s);
-                  setDateTo(s);
-                },
+                range: () => [daysAgoLocal(1), daysAgoLocal(1)],
               },
               {
-                label: "Ultimos 7 dias",
-                fn: () => {
-                  const d = new Date();
-                  d.setDate(d.getDate() - 6);
-                  setDateFrom(d.toISOString().slice(0, 10));
-                  setDateTo(localDateStr());
-                },
+                label: "Últimos 7 días",
+                range: () => [daysAgoLocal(6), localDateStr()],
               },
               {
                 label: "Este mes",
-                fn: () => {
+                range: () => {
                   const now = new Date();
-                  const first = new Date(now.getFullYear(), now.getMonth(), 1)
-                    .toISOString()
-                    .slice(0, 10);
-                  setDateFrom(first);
-                  setDateTo(localDateStr());
+                  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+                  return [localDateStr(first), localDateStr()];
                 },
               },
-            ].map(({ label, fn }) => (
+            ].map(({ label, range }) => (
               <button
                 key={label}
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: 11, padding: "4px 10px" }}
-                onClick={fn}
+                onClick={() => {
+                  const [from, to] = range();
+                  setDateFrom(from);
+                  setDateTo(to);
+                  load(from, to);
+                }}
               >
                 {label}
               </button>
@@ -664,226 +577,81 @@ export default function DailyClosure() {
 
         {data && !loading && (
           <>
-            {/* Resumen cards */}
+            {/* Resumen */}
             <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3,1fr)",
-                gap: 10,
-                marginBottom: 16,
-              }}
+              className="stats-grid stats-grid-3"
+              style={{ marginBottom: 14 }}
             >
-              <div
-                style={{
-                  background: "var(--accent-light)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--accent)",
-                    marginBottom: 2,
-                  }}
-                >
-                  {dateFrom !== dateTo
-                    ? "VENTAS DEL PERIODO"
-                    : "VENTAS DEL DIA"}
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 20,
-                    color: "var(--accent)",
-                  }}
-                >
-                  {fmt(data.total_sales)}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                  {data.total_count} transacciones
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--text3)",
-                    marginBottom: 2,
-                  }}
-                >
-                  Ventas efectivo
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 20,
-                    color: "var(--green)",
-                  }}
-                >
-                  {fmt(totalCashSales)}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                  {data.sales_by_method?.find((s) => s.payment_method === "efectivo")?.count ?? 0} ventas
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--text3)",
-                    marginBottom: 2,
-                  }}
-                >
-                  Ventas SINPE
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 20,
-                    color: "var(--blue)",
-                  }}
-                >
-                  {fmt(totalSinpeSales)}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                  {data.sales_by_method?.find((s) => s.payment_method === "sinpe")?.count ?? 0} ventas
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--green-light)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--green)",
-                    marginBottom: 2,
-                  }}
-                >
-                  <FiDollarSign /> CAJA
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 20,
-                    color: "var(--green)",
-                  }}
-                >
-                  {fmt(totalCash)}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                  Saldo actual
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--blue-light)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--blue)",
-                    marginBottom: 2,
-                  }}
-                >
-                  <FiSmartphone /> SINPE
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 20,
-                    color: "var(--blue)",
-                  }}
-                >
-                  {fmt(totalSinpe)}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                  Saldo actual
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--text3)",
-                    marginBottom: 2,
-                  }}
-                >
-                  Movimientos inventario
-                </div>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 20,
-                    color: "var(--text)",
-                  }}
-                >
-                  {totalInventoryMovements}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                  Registrados hoy
-                </div>
-              </div>
+              <StatCard
+                icon={<FiDollarSign />}
+                label={dateFrom !== dateTo ? "Ventas del período" : "Ventas del día"}
+                value={fmt(data.total_sales)}
+                sub={`${data.total_count} transacciones`}
+                iconBg="#e6f8ff"
+              />
+              <StatCard
+                icon={<FiDollarSign />}
+                label="Caja"
+                value={fmt(totalCash)}
+                sub="Saldo actual"
+                iconBg="#d4eddf"
+              />
+              <StatCard
+                icon={<FiSmartphone />}
+                label="SINPE"
+                value={fmt(totalSinpe)}
+                sub="Saldo actual"
+                iconBg="#dbeafe"
+              />
+              <StatCard
+                icon={<FiDollarSign />}
+                label="Ventas efectivo"
+                value={fmt(totalCashSales)}
+                sub={`${data.sales_by_method?.find((s) => s.payment_method === "efectivo")?.count ?? 0} ventas`}
+                iconBg="#f4f6f8"
+              />
+              <StatCard
+                icon={<FiSmartphone />}
+                label="Ventas SINPE"
+                value={fmt(totalSinpeSales)}
+                sub={`${data.sales_by_method?.find((s) => s.payment_method === "sinpe")?.count ?? 0} ventas`}
+                iconBg="#f4f6f8"
+              />
+              <StatCard
+                icon={<FiRepeat />}
+                label="Movimientos inventario"
+                value={totalInventoryMovements}
+                sub="Registrados en el período"
+                iconBg="#f4f6f8"
+              />
             </div>
 
             {/* Alerta bajo stock */}
             {data.low_stock?.length > 0 && (
               <div
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
                   background: "var(--red-light)",
                   border: "1px solid var(--danger-border)",
                   borderRadius: 10,
                   padding: "10px 14px",
                   marginBottom: 14,
                   fontSize: 13,
+                  color: "var(--text2)",
                 }}
               >
-                ⚠️ <strong>{data.low_stock.length} productos</strong> con stock
-                bajo:{" "}
-                {data.low_stock
-                  .slice(0, 3)
-                  .map((p) => p.name)
-                  .join(", ")}
-                {data.low_stock.length > 3 ? "..." : ""}
+                <FiAlertTriangle style={{ color: "var(--red)", flexShrink: 0 }} />
+                <span>
+                  <strong>{data.low_stock.length} productos</strong> con stock
+                  bajo:{" "}
+                  {data.low_stock
+                    .slice(0, 3)
+                    .map((p) => p.name)
+                    .join(", ")}
+                  {data.low_stock.length > 3 ? "…" : ""}
+                </span>
               </div>
             )}
 
@@ -995,39 +763,29 @@ export default function DailyClosure() {
             {/* Email */}
             <div
               style={{
-                background: "var(--surface2)",
-                borderRadius: 10,
-                padding: "14px 16px",
+                borderTop: "1px solid var(--border)",
+                paddingTop: 14,
                 marginBottom: 4,
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>
-                <>
-                  <FiMail /> Enviar por Email
-                </>
+              <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 8 }}>
+                <FiMail /> Enviar por email
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: "9px 13px",
-                    border: "1.5px solid var(--border)",
-                    borderRadius: 8,
-                    fontFamily: "Sora,sans-serif",
-                    fontSize: 13,
-                    outline: "none",
-                    background: "white",
-                  }}
-                />
+                <div className="field" style={{ flex: 1, marginBottom: 0 }}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
                 <button
-                  className="btn btn-blue"
+                  className="btn btn-accent"
                   onClick={sendEmailFn}
                   disabled={sending}
                 >
-                  {sending ? "Enviando..." : "Enviar"}
+                  {sending ? "Enviando…" : "Enviar"}
                 </button>
               </div>
             </div>

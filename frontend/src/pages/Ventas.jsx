@@ -12,20 +12,40 @@ import {
   FiXCircle,
   FiDownload,
   FiX,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import useAuthStore from "../store/authStore";
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i);
 
 export default function Ventas() {
   const { isAdmin } = useAuthStore();
   const [sales, setSales] = useState([]);
   const [total, setTotal] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
   const [detail, setDetail] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [photoModal, setPhotoModal] = useState(null);
+
+  // Rango de fechas derivado del mes/año elegido
+  const dateFrom = year
+    ? `${year}-${String(month || 1).padStart(2, "0")}-01`
+    : "";
+  const dateTo = year
+    ? month
+      ? new Date(year, month, 0).toISOString().slice(0, 10)
+      : `${year}-12-31`
+    : "";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,11 +58,13 @@ export default function Ventas() {
       });
       setSales(data.sales);
       setTotal(data.total);
+      setTotalAmount(data.total_amount ?? 0);
     } catch {
       toast.error("Error al cargar ventas");
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, dateFrom, dateTo]);
 
   useEffect(() => {
@@ -60,11 +82,6 @@ export default function Ventas() {
     setConfirm(null);
   };
 
-  const totalFiltered = sales.reduce(
-    (s, sale) => s + parseFloat(sale.total),
-    0,
-  );
-
   return (
     <>
       <div className="page-header">
@@ -75,66 +92,68 @@ export default function Ventas() {
       </div>
 
       <div className="filters-bar">
-        <label
-          style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text2)" }}
-        >
-          Desde:
-        </label>
-        <input
-          type="date"
-          value={dateFrom}
+        <select
+          className="filter"
+          value={month}
           onChange={(e) => {
-            setDateFrom(e.target.value);
+            setMonth(e.target.value);
+            if (e.target.value && !year) setYear(String(CURRENT_YEAR));
             setPage(1);
           }}
-          style={{
-            padding: "8px 12px",
-            border: "1.5px solid var(--border)",
-            borderRadius: 8,
-            fontFamily: "Sora,sans-serif",
-            fontSize: 13,
-            outline: "none",
-          }}
-        />
-        <label
-          style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text2)" }}
         >
-          Hasta:
-        </label>
-        <input
-          type="date"
-          value={dateTo}
+          <option value="">Todos los meses</option>
+          {MONTHS.map((m, i) => (
+            <option key={m} value={i + 1}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <select
+          className="filter"
+          value={year}
           onChange={(e) => {
-            setDateTo(e.target.value);
+            setYear(e.target.value);
             setPage(1);
           }}
-          style={{
-            padding: "8px 12px",
-            border: "1.5px solid var(--border)",
-            borderRadius: 8,
-            fontFamily: "Sora,sans-serif",
-            fontSize: 13,
-            outline: "none",
-          }}
-        />
-        {(dateFrom || dateTo) && (
+        >
+          <option value="">Todos los años</option>
+          {YEARS.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+        {(month || year) && (
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => {
-              setDateFrom("");
-              setDateTo("");
+              setMonth("");
+              setYear("");
+              setPage(1);
             }}
           >
             <FiX /> Limpiar
           </button>
         )}
-        {sales.length > 0 && (
-          <div style={{ marginLeft: "auto", fontWeight: 700, fontSize: 15 }}>
-            Total:{" "}
-            <span style={{ color: "var(--accent)" }}>{fmt(totalFiltered)}</span>
-          </div>
-        )}
       </div>
+
+      {!loading && sales.length > 0 && (
+        <div className="sales-summary">
+          <div>
+            <div className="sales-summary-label">
+              {month && year
+                ? `Total ${MONTHS[month - 1]} ${year}`
+                : year
+                  ? `Total ${year}`
+                  : "Total del período"}
+            </div>
+            <div className="sales-summary-value">{fmt(totalAmount)}</div>
+          </div>
+          <div className="sales-summary-count">
+            {total} venta{total !== 1 ? "s" : ""}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         {loading ? (
@@ -146,7 +165,8 @@ export default function Ventas() {
             description="Las ventas aparecerán aquí una vez que uses la Caja"
           />
         ) : (
-          <div className="table-wrap">
+          <>
+          <div className="table-wrap desktop-only">
             <table>
               <thead>
                 <tr>
@@ -243,8 +263,58 @@ export default function Ventas() {
                 ))}
               </tbody>
             </table>
-            <Pagination page={page} total={total} limit={30} onPage={setPage} />
           </div>
+
+          <div className="sale-cards mobile-only">
+            {sales.map((s) => (
+              <div className="s-card" key={s.id}>
+                <div className="s-main">
+                  <div className="s-top">
+                    <span className="s-total">{fmt(s.total)}</span>
+                    <span
+                      className={`badge ${s.payment_method === "efectivo" ? "badge-green" : "badge-blue"}`}
+                    >
+                      {s.payment_method === "efectivo" ? (
+                        <FiDollarSign />
+                      ) : (
+                        <FiSmartphone />
+                      )}{" "}
+                      {s.payment_method}
+                    </span>
+                    {s.status !== "completada" && (
+                      <span className="badge badge-red">{s.status}</span>
+                    )}
+                  </div>
+                  <div className="s-meta">
+                    {fmtDateTime(s.created_at)} ·{" "}
+                    {(s.items || []).filter(Boolean).length} artículo(s)
+                    {s.user_name ? ` · ${s.user_name}` : ""}
+                  </div>
+                </div>
+                <div className="s-actions">
+                  <button
+                    className="btn-icon"
+                    onClick={() => setDetail(s)}
+                    title="Ver detalle"
+                  >
+                    <FiEye />
+                  </button>
+                  {isAdmin() && s.status === "completada" && (
+                    <button
+                      className="btn-icon"
+                      onClick={() => setConfirm(s.id)}
+                      title="Anular"
+                    >
+                      <FiXCircle />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Pagination page={page} total={total} limit={30} onPage={setPage} />
+          </>
         )}
       </div>
 
@@ -470,15 +540,22 @@ export default function Ventas() {
         >
           <div
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               background: "var(--red-light)",
               border: "1px solid var(--danger-border)",
               borderRadius: 8,
               padding: "12px 14px",
               marginBottom: 16,
               fontSize: 13,
+              color: "var(--red)",
             }}
           >
-            ⚠️ El stock de los productos será restaurado automáticamente.
+            <FiAlertTriangle style={{ flexShrink: 0 }} />
+            <span style={{ color: "var(--text2)" }}>
+              El stock de los productos será restaurado automáticamente.
+            </span>
           </div>
           <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
             ¿Confirmas que deseas anular esta venta?

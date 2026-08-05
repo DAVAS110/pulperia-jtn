@@ -217,7 +217,8 @@ export default function Productos() {
             }
           />
         ) : (
-          <div className="table-wrap">
+          <>
+          <div className="table-wrap desktop-only">
             <table>
               <thead>
                 <tr>
@@ -361,8 +362,71 @@ export default function Productos() {
                 ))}
               </tbody>
             </table>
-            <Pagination page={page} total={total} limit={20} onPage={setPage} />
           </div>
+
+          <div className="product-cards mobile-only">
+            {products.map((p) => (
+              <div className="p-card" key={p.id}>
+                <div className="p-thumb">
+                  {p.image_url ? (
+                    <img src={p.image_url} alt="" />
+                  ) : (
+                    <FiBox />
+                  )}
+                </div>
+                <div className="p-main">
+                  <div className="p-top-row">
+                    <div>
+                      <div className="p-name">{p.name}</div>
+                      <div className="p-meta">
+                        {p.category_name || "Sin categoría"} · {p.sku}
+                      </div>
+                    </div>
+                    <div className="p-price">{fmt(p.sale_price)}</div>
+                  </div>
+                  {(p.low_stock ||
+                    (p.expiration_date && (p.expired || p.expiring_soon))) && (
+                    <div className="p-tags">
+                      {p.low_stock && (
+                        <span className="tag tag-stock-low">
+                          <FiAlertTriangle /> {p.stock} u. (min {p.min_stock})
+                        </span>
+                      )}
+                      {p.expiration_date && (p.expired || p.expiring_soon) && (
+                        <span className="tag tag-exp">
+                          <FiClock />{" "}
+                          {p.expired
+                            ? "Vencido"
+                            : `${daysUntil(p.expiration_date)} día(s)`}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="p-actions">
+                  <button
+                    className="btn-icon"
+                    onClick={() => openEdit(p)}
+                    title="Editar"
+                  >
+                    <FiEdit />
+                  </button>
+                  {isAdmin() && (
+                    <button
+                      className="btn-icon"
+                      onClick={() => setConfirm(p.id)}
+                      title="Eliminar"
+                    >
+                      <FiTrash2 />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Pagination page={page} total={total} limit={20} onPage={setPage} />
+          </>
         )}
       </div>
 

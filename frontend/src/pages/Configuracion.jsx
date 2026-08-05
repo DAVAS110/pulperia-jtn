@@ -5,7 +5,6 @@ import { toast } from "../store/toastStore";
 import useAuthStore from "../store/authStore";
 import { fmtDateTime, timeAgo } from "../utils/helpers";
 import {
-  FiUser,
   FiHome,
   FiUsers,
   FiKey,
@@ -130,87 +129,34 @@ export default function Configuracion() {
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 20,
-          marginBottom: 28,
-        }}
-      >
-        {/* Mi perfil */}
-        <div className="card card-body">
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-            <FiUser /> Mi Perfil
+      <div className="card card-body" style={{ marginBottom: 24 }}>
+        <div className="profile-row">
+          <div className="profile-avatar">
+            {user?.name?.charAt(0).toUpperCase()}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: "50%",
-                background:
-                  "linear-gradient(135deg,var(--accent),var(--accent2))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                fontWeight: 700,
-                color: "white",
-                flexShrink: 0,
-              }}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>{user?.name}</div>
+            <div style={{ color: "var(--text3)", fontSize: 13 }}>
+              {user?.email}
+            </div>
+            <span
+              className={`badge ${user?.role === "admin" ? "badge-blue" : "badge-green"}`}
+              style={{ marginTop: 6 }}
             >
-              {user?.name?.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{user?.name}</div>
-              <div style={{ color: "var(--text3)", fontSize: 13 }}>
-                {user?.email}
-              </div>
-              <span
-                className={`badge ${user?.role === "admin" ? "badge-blue" : "badge-green"}`}
-                style={{ marginTop: 6 }}
-              >
-                {user?.role === "admin" ? (
-                  <>
-                    <FiKey /> Administrador
-                  </>
-                ) : (
-                  <>
-                    <FiUserCheck /> Empleado
-                  </>
-                )}
-              </span>
-            </div>
+              {user?.role === "admin" ? (
+                <>
+                  <FiKey /> Administrador
+                </>
+              ) : (
+                <>
+                  <FiUserCheck /> Empleado
+                </>
+              )}
+            </span>
           </div>
-        </div>
-
-        {/* App info */}
-        <div className="card card-body">
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-            <FiHome /> Acerca de Pulperia JTN
+          <div className="profile-version">
+            <FiHome /> Pulpería JTN · v1.0.0
           </div>
-          {[
-            ["Versión", "1.0.0"],
-            ["Stack", "React + Node.js + PostgreSQL"],
-            ["Deploy", "Vercel + Render + Supabase"],
-          ].map(([k, v]) => (
-            <div
-              key={k}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "8px 0",
-                borderBottom: "1px solid var(--border)",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "var(--text3)", fontWeight: 500 }}>
-                {k}
-              </span>
-              <span style={{ fontWeight: 600 }}>{v}</span>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -236,7 +182,7 @@ export default function Configuracion() {
             <Spinner />
           ) : (
             <div className="card">
-              <div className="table-wrap">
+              <div className="table-wrap desktop-only">
                 <table>
                   <thead>
                     <tr>
@@ -350,12 +296,11 @@ export default function Configuracion() {
                                   {u.is_active ? <FiLock /> : <FiUnlock />}
                                 </button>
                                 <button
-                                  className="btn-icon"
+                                  className="btn-icon btn-icon-danger"
                                   title="Eliminar permanentemente"
                                   onClick={() =>
                                     setConfirm({ user: u, action: "delete" })
                                   }
-                                  style={{ color: "var(--red)" }}
                                 >
                                   <FiTrash2 />
                                 </button>
@@ -367,6 +312,72 @@ export default function Configuracion() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="user-cards mobile-only">
+                {users.map((u) => (
+                  <div className="u-card" key={u.id}>
+                    <div
+                      className="u-avatar"
+                      style={{
+                        background:
+                          u.role === "admin"
+                            ? "linear-gradient(135deg,var(--accent),var(--accent2))"
+                            : "linear-gradient(135deg,var(--blue),var(--blue-dark))",
+                      }}
+                    >
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="u-main">
+                      <div className="u-top">
+                        <span className="u-name">
+                          {u.name}
+                          {u.id === user.id ? " (Tú)" : ""}
+                        </span>
+                        <span
+                          className={`badge ${u.is_active ? "badge-green" : "badge-red"}`}
+                        >
+                          {u.is_active ? "Activo" : "Inactivo"}
+                        </span>
+                      </div>
+                      <div className="u-meta">
+                        {u.role === "admin" ? "Admin" : "Empleado"} ·{" "}
+                        {u.last_login ? timeAgo(u.last_login) : "Nunca"}
+                      </div>
+                    </div>
+                    <div className="u-actions">
+                      <button
+                        className="btn-icon"
+                        onClick={() => openEdit(u)}
+                        title="Editar"
+                      >
+                        <FiEdit />
+                      </button>
+                      {u.id !== user.id && (
+                        <>
+                          <button
+                            className="btn-icon"
+                            title={u.is_active ? "Desactivar" : "Activar"}
+                            onClick={() =>
+                              setConfirm({ user: u, action: "toggle" })
+                            }
+                          >
+                            {u.is_active ? <FiLock /> : <FiUnlock />}
+                          </button>
+                          <button
+                            className="btn-icon btn-icon-danger"
+                            title="Eliminar permanentemente"
+                            onClick={() =>
+                              setConfirm({ user: u, action: "delete" })
+                            }
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -479,13 +490,13 @@ export default function Configuracion() {
         >
           {form.role === "admin" ? (
             <>
-              <FiKey /> Acceso completo: ventas, inventario, reportes, usuarios
-              y tesorería.
+              <FiKey /> Acceso completo: ventas, inventario, usuarios y
+              tesorería.
             </>
           ) : (
             <>
-              <FiUserCheck /> Acceso a ventas, inventario y reportes. Sin acceso
-              a usuarios ni retiros.
+              <FiUserCheck /> Acceso a ventas e inventario. Sin acceso a
+              usuarios ni tesorería.
             </>
           )}
         </div>

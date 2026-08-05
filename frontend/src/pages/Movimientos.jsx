@@ -3,13 +3,33 @@ import { inventoryAPI, productsAPI } from "../services/api";
 import { Modal, Spinner, EmptyState, Pagination } from "../components/ui";
 import { toast } from "../store/toastStore";
 import {
-  fmt,
   fmtDateTime,
   MOVEMENT_LABELS,
   MOVEMENT_COLORS,
   MOVEMENT_TYPES,
 } from "../utils/helpers";
-import { FiArrowUp, FiArrowDown, FiRepeat, FiSave } from "react-icons/fi";
+import {
+  FiRepeat,
+  FiSave,
+  FiSearch,
+  FiBox,
+  FiX,
+  FiPlus,
+} from "react-icons/fi";
+
+const EMPTY_FORM = { product_id: "", type: "entrada", quantity: 1, reason: "" };
+
+const REASONS = {
+  entrada: [
+    "Compra a proveedor",
+    "Ajuste de inventario",
+    "Devolución de cliente",
+    "Otro",
+  ],
+  salida: ["Producto dañado", "Caducado", "Muestra", "Otro"],
+  ajuste: ["Conteo físico", "Corrección de error", "Otro"],
+  pérdida: ["Robo", "Merma", "Accidente", "Otro"],
+};
 
 export default function Movimientos() {
   const [movements, setMovements] = useState([]);
@@ -19,13 +39,10 @@ export default function Movimientos() {
   const [typeFilter, setTypeFilter] = useState("");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({
-    product_id: "",
-    type: "entrada",
-    quantity: 1,
-    reason: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [productMatches, setProductMatches] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,7 +77,37 @@ export default function Movimientos() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!productSearch.trim()) {
+      setProductMatches([]);
+      return;
+    }
+    const q = productSearch.toLowerCase();
+    setProductMatches(
+      products
+        .filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
+        )
+        .slice(0, 6),
+    );
+  }, [productSearch, products]);
+
+  const selectedProduct = products.find((p) => p.id === form.product_id);
+
+  const openModal = (type) => {
+    setForm({ ...EMPTY_FORM, type });
+    setProductSearch("");
+    setModal(true);
+  };
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const pickProduct = (p) => {
+    setForm((f) => ({ ...f, product_id: p.id }));
+    setProductSearch("");
+    setProductMatches([]);
+  };
 
   const save = async () => {
     if (!form.product_id) return toast.error("Selecciona un producto");
@@ -71,25 +118,12 @@ export default function Movimientos() {
       await inventoryAPI.create({ ...form, quantity: parseInt(form.quantity) });
       toast.success("Movimiento registrado");
       setModal(false);
-      setForm({ product_id: "", type: "entrada", quantity: 1, reason: "" });
       load();
     } catch (err) {
       toast.error(err.response?.data?.error || "Error al registrar");
     } finally {
       setSaving(false);
     }
-  };
-
-  const REASONS = {
-    entrada: [
-      "Compra a proveedor",
-      "Ajuste de inventario",
-      "Devolución de cliente",
-      "Otro",
-    ],
-    salida: ["Producto dañado", "Caducado", "Muestra", "Otro"],
-    ajuste: ["Conteo físico", "Corrección de error", "Otro"],
-    pérdida: ["Robo", "Merma", "Accidente", "Otro"],
   };
 
   return (
@@ -99,26 +133,9 @@ export default function Movimientos() {
           <h1>Movimientos de Inventario</h1>
           <p>Entradas y salidas de stock</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="btn btn-green"
-            onClick={() => {
-              setForm((f) => ({ ...f, type: "entrada" }));
-              setModal(true);
-            }}
-          >
-            <FiArrowUp /> Entrada
-          </button>
-          <button
-            className="btn btn-danger"
-            onClick={() => {
-              setForm((f) => ({ ...f, type: "salida" }));
-              setModal(true);
-            }}
-          >
-            <FiArrowDown /> Salida
-          </button>
-        </div>
+        <button className="btn btn-accent" onClick={() => openModal("entrada")}>
+          <FiPlus /> Nuevo Movimiento
+        </button>
       </div>
 
       <div className="filters-bar">
@@ -150,7 +167,8 @@ export default function Movimientos() {
             description="Registra tu primer movimiento de inventario"
           />
         ) : (
-          <div className="table-wrap">
+          <>
+          <div className="table-wrap desktop-only">
             <table>
               <thead>
                 <tr>
@@ -219,8 +237,47 @@ export default function Movimientos() {
                 ))}
               </tbody>
             </table>
-            <Pagination page={page} total={total} limit={30} onPage={setPage} />
           </div>
+
+          <div className="movement-cards mobile-only">
+            {movements.map((m) => (
+              <div className="mv-card" key={m.id}>
+                <span
+                  className="mv-qty"
+                  style={{
+                    color: ["entrada"].includes(m.type)
+                      ? "var(--green)"
+                      : "var(--red)",
+                  }}
+                >
+                  {["entrada"].includes(m.type) ? "+" : "-"}
+                  {m.quantity}
+                </span>
+                <div className="mv-main">
+                  <div className="mv-top">
+                    <span className="mv-name">{m.product_name}</span>
+                    <span
+                      className="badge"
+                      style={{
+                        background: MOVEMENT_COLORS[m.type] + "20",
+                        color: MOVEMENT_COLORS[m.type],
+                      }}
+                    >
+                      {MOVEMENT_LABELS[m.type] || m.type}
+                    </span>
+                  </div>
+                  <div className="mv-meta">
+                    {fmtDateTime(m.created_at)}
+                    {m.reason ? ` · ${m.reason}` : ""}
+                    {m.user_name ? ` · ${m.user_name}` : ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Pagination page={page} total={total} limit={30} onPage={setPage} />
+          </>
         )}
       </div>
 
@@ -228,30 +285,115 @@ export default function Movimientos() {
         open={modal}
         onClose={() => setModal(false)}
         title="Registrar Movimiento"
-        maxWidth={480}
+        maxWidth={460}
       >
         <div className="field">
-          <label>Producto *</label>
-          <select value={form.product_id} onChange={set("product_id")}>
-            <option value="">Seleccionar producto…</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} (stock: {p.stock})
-              </option>
+          <label>Tipo *</label>
+          <div className="type-tabs">
+            {MOVEMENT_TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`type-tab ${form.type === t ? "active" : ""}`}
+                style={
+                  form.type === t
+                    ? {
+                        background: MOVEMENT_COLORS[t] + "1a",
+                        borderColor: MOVEMENT_COLORS[t],
+                        color: MOVEMENT_COLORS[t],
+                      }
+                    : undefined
+                }
+                onClick={() => setForm((f) => ({ ...f, type: t, reason: "" }))}
+              >
+                {MOVEMENT_LABELS[t]}
+              </button>
             ))}
-          </select>
-        </div>
-        <div className="form-row">
-          <div className="field">
-            <label>Tipo *</label>
-            <select value={form.type} onChange={set("type")}>
-              {MOVEMENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {MOVEMENT_LABELS[t]}
-                </option>
-              ))}
-            </select>
           </div>
+        </div>
+
+        <div className="field">
+          <label>Producto *</label>
+          {selectedProduct ? (
+            <div className="picked-product">
+              <div className="prod-img">
+                {selectedProduct.image_url ? (
+                  <img
+                    src={selectedProduct.image_url}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <FiBox />
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="prod-name">{selectedProduct.name}</div>
+                <div className="prod-sku">
+                  {selectedProduct.sku} · Stock: {selectedProduct.stock}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setForm((f) => ({ ...f, product_id: "" }))}
+                title="Cambiar producto"
+              >
+                <FiX />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="search-input">
+                <span style={{ color: "var(--text3)" }}>
+                  <FiSearch />
+                </span>
+                <input
+                  placeholder="Buscar producto por nombre o SKU…"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              {productMatches.length > 0 && (
+                <div className="product-picker-list">
+                  {productMatches.map((p) => (
+                    <div
+                      key={p.id}
+                      className="product-picker-row"
+                      onClick={() => pickProduct(p)}
+                    >
+                      <div className="prod-img">
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <FiBox />
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="prod-name">{p.name}</div>
+                        <div className="prod-sku">{p.sku}</div>
+                      </div>
+                      <span className="product-picker-stock">
+                        Stock: {p.stock}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="form-row">
           <div className="field">
             <label>Cantidad *</label>
             <input
@@ -261,18 +403,19 @@ export default function Movimientos() {
               min="1"
             />
           </div>
+          <div className="field">
+            <label>Motivo</label>
+            <select value={form.reason} onChange={set("reason")}>
+              <option value="">Seleccionar motivo…</option>
+              {(REASONS[form.type] || REASONS.entrada).map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="field">
-          <label>Motivo</label>
-          <select value={form.reason} onChange={set("reason")}>
-            <option value="">Seleccionar motivo…</option>
-            {(REASONS[form.type] || REASONS.entrada).map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
+
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={() => setModal(false)}>
             Cancelar

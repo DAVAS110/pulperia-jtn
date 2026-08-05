@@ -108,7 +108,8 @@ export default function Pendientes() {
             }
           />
         ) : (
-          <div className="table-wrap">
+          <>
+          <div className="table-wrap desktop-only">
             <table>
               <thead>
                 <tr>
@@ -172,8 +173,51 @@ export default function Pendientes() {
                 ))}
               </tbody>
             </table>
-            <Pagination page={page} total={total} limit={30} onPage={setPage} />
           </div>
+
+          <div className="debt-cards mobile-only">
+            {debts.map((d) => (
+              <div className="d-card" key={d.id}>
+                <div className="d-main">
+                  <div className="d-top">
+                    <span className="d-name">{d.customer_name}</span>
+                    <span
+                      className={`badge ${d.status === "pagada" ? "badge-green" : "badge-red"}`}
+                    >
+                      {d.status}
+                    </span>
+                  </div>
+                  <div className="d-meta">
+                    {fmtDateTime(d.created_at)} ·{" "}
+                    {(d.items || []).filter(Boolean).length} artículo(s)
+                    {d.customer_phone ? ` · ${d.customer_phone}` : ""}
+                  </div>
+                </div>
+                <div className="d-amount">{fmt(d.amount)}</div>
+                <div className="d-actions">
+                  <button
+                    className="btn-icon"
+                    onClick={() => setDetail(d)}
+                    title="Ver detalle"
+                  >
+                    <FiEye />
+                  </button>
+                  {d.status === "pendiente" && (
+                    <button
+                      className="btn-icon"
+                      onClick={() => setPaying(d)}
+                      title="Cobrar"
+                    >
+                      <FiCreditCard />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Pagination page={page} total={total} limit={30} onPage={setPage} />
+          </>
         )}
       </div>
 
@@ -323,11 +367,8 @@ export default function Pendientes() {
               </div>
             ))}
 
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setDetail(null)}>
-                Cerrar
-              </button>
-              {detail.status === "pendiente" && (
+            {detail.status === "pendiente" && (
+              <div className="modal-footer">
                 <button
                   className="btn btn-accent"
                   onClick={() => {
@@ -337,8 +378,8 @@ export default function Pendientes() {
                 >
                   <FiCreditCard /> Cobrar
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </Modal>

@@ -6,7 +6,10 @@ export const fmt = (n) =>
   });
 
 export const fmtDate = (d) => {
-  const date = typeof d === "string" ? new Date(d + "T00:00:00") : new Date(d);
+  const date =
+    typeof d === "string"
+      ? new Date(d.slice(0, 10) + "T00:00:00")
+      : new Date(d);
   return date.toLocaleDateString("es-CR", {
     day: "2-digit",
     month: "short",
@@ -68,27 +71,3 @@ export const PALETTE = [
   "#795548",
   "#607d8b",
 ];
-
-export const downloadCSV = (data, filename) => {
-  const csv = data
-    .map((row) =>
-      Object.values(row)
-        .map((v) => `"${v ?? ""}"`)
-        .join(","),
-    )
-    .join("\n");
-  const header = Object.keys(data[0])
-    .map((k) => `"${k}"`)
-    .join(",");
-  const blob = new Blob(["\uFEFF" + header + "\n" + csv], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};

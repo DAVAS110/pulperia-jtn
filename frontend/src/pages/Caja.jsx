@@ -31,7 +31,6 @@ export default function Caja() {
   const [processing, setProcessing] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [receiptModal, setReceiptModal] = useState(false);
-  const [skuInput, setSkuInput] = useState("");
   const [activeTab, setActiveTab] = useState("productos"); // 'productos' | 'combos'
   const [debtModal, setDebtModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -285,20 +284,6 @@ export default function Caja() {
     } catch {}
   };
 
-  const handleSkuScan = async (e) => {
-    if (e.key !== "Enter") return;
-    const sku = skuInput.trim();
-    if (!sku) return;
-    try {
-      const { data } = await productsAPI.getBySku(sku);
-      addToCart(data.product);
-      toast.success(`${data.product.name} agregado`);
-    } catch {
-      toast.error("Producto no encontrado");
-    }
-    setSkuInput("");
-  };
-
   const confirmSale = async (payment) => {
     if (!cart.length) return toast.error("El carrito está vacío");
     setProcessing(true);
@@ -348,32 +333,12 @@ export default function Caja() {
     <>
       <div className="page-header" style={{ marginBottom: 12 }}>
         <div>
-          <h1>Caja / POS</h1>
-          <p style={{ display: "none" }}>Punto de venta rápido</p>
+          <h1>Caja</h1>
         </div>
-        <input
-          value={skuInput}
-          onChange={(e) => setSkuInput(e.target.value)}
-          onKeyDown={handleSkuScan}
-          placeholder="Escanear código…"
-          style={{
-            padding: "9px 14px",
-            border: "1.5px solid var(--border)",
-            borderRadius: 8,
-            fontFamily: "Sora,sans-serif",
-            fontSize: 13,
-            width: "100%",
-            maxWidth: 220,
-            outline: "none",
-          }}
-        />
       </div>
 
       <div className="pos-layout">
-        <div
-          className="pos-products-wrapper"
-          style={{ paddingBottom: cart.length > 0 ? 240 : 90 }}
-        >
+        <div className="pos-products-wrapper">
           <div className="search-input" style={{ marginBottom: 16 }}>
             <span style={{ color: "var(--text3)" }}>
               <FiSearch />

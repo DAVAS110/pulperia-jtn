@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { treasuryAPI } from "../../services/api";
-import { Modal } from "../ui";
+import { Modal, StatCard } from "../ui";
 import { toast } from "../../store/toastStore";
 import { fmt, fmtDateTime } from "../../utils/helpers";
 import { FiDollarSign, FiSmartphone, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
@@ -26,7 +26,6 @@ export default function TreasuryPanel() {
   const { isAdmin } = useAuthStore();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("caja"); // 'caja' | 'sinpe'
   const [histTab, setHistTab] = useState("all"); // 'all' | 'caja' | 'sinpe'
   const [movements, setMovements] = useState([]);
   const [movTotal, setMovTotal] = useState(0);
@@ -111,10 +110,6 @@ export default function TreasuryPanel() {
   const balanceCaja = data?.caja?.balance ?? 0;
   const balanceSinpe = data?.sinpe?.balance ?? 0;
   const totalBalance = balanceCaja + balanceSinpe;
-  const totalOutMonth = (data?.monthly_totals || []).reduce(
-    (sum, row) => sum + parseFloat(row.total_out || 0),
-    0,
-  );
   const monthlySales = data?.monthly_sales ?? 0;
   const monthlyOutflows = data?.monthly_outflows ?? 0;
   const monthlyHistory = data?.monthly_history || [];
@@ -132,294 +127,136 @@ export default function TreasuryPanel() {
     return rowWithBalance;
   });
 
-  const monthly = (type, dir) => {
-    const row = (data?.monthly_totals || []).find(
-      (r) => r.account_type === type,
-    );
-    return row ? parseFloat(row[dir === "in" ? "total_in" : "total_out"]) : 0;
-  };
-
   return (
-    <div style={{ marginTop: 28 }}>
-      {/* ── Header ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
-        }}
-      >
-        <div>
-          <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 20 }}>
-            <FiDollarSign /> Tesorería
-          </h2>
-          <p style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>
-            Caja física y cuenta SINPE
-          </p>
-        </div>
-      </div>
-
-      {/* ── Totals box ── */}
-      <div className="card totals-summary" style={{ marginBottom: 24 }}>
-        <div className="totals-summary-header">
-          <div>
-            <div className="totals-overline">Resumen de Totales</div>
-            <h3 className="totals-headline">Tesorería en un vistazo</h3>
-          </div>
-          <span className="badge badge-blue">Actualizado</span>
-        </div>
-        <div className="totals-grid">
-          <div className="totals-card totals-card-primary">
-            <div className="totals-card-header">
-              <FiDollarSign /> Saldo total al cierre del mes
-            </div>
-            <div className="totals-value">{loading ? "…" : fmt(totalBalance)}</div>
-            <div className="totals-meta">Caja + SINPE</div>
-          </div>
-          <div className="totals-card totals-card-in">
-            <div className="totals-card-header">
-              <FiTrendingUp /> Ventas del mes
-            </div>
-            <div className="totals-value">{loading ? "…" : fmt(monthlySales)}</div>
-            <div className="totals-meta">Solo ventas registradas</div>
-          </div>
-          <div className="totals-card totals-card-out">
-            <div className="totals-card-header">
-              <FiTrendingDown /> Salidas del mes
-            </div>
-            <div className="totals-value">{loading ? "…" : fmt(monthlyOutflows)}</div>
-            <div className="totals-meta">Gastos y retiros del mes</div>
-          </div>
-        </div>
-        <div className="totals-history">
-          <div className="history-title">Historial mensual</div>
-          <div className="history-table">
-            <div className="history-row history-row-headings">
-              <span>Mes</span>
-              <span>Saldo cierre</span>
-              <span>Ventas</span>
-              <span>Salidas</span>
-            </div>
-            {monthlyHistoryRows.length === 0 ? (
-              <div className="history-row history-row-empty">
-                No hay datos mensuales aún
-              </div>
-            ) : (
-              monthlyHistoryRows.map((row) => (
-                <div className="history-row" key={row.month_label}>
-                  <span>{row.month_label}</span>
-                  <strong>{fmt(row.balance_end)}</strong>
-                  <span>{fmt(row.sales)}</span>
-                  <span>{fmt(row.outflows)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+    <div>
+      {/* ── Stats ── */}
+      <div className="stats-grid stats-grid-3" style={{ marginBottom: 16 }}>
+        <StatCard
+          icon={<FiDollarSign />}
+          label="Saldo Total"
+          value={loading ? "…" : fmt(totalBalance)}
+          sub="Caja + SINPE"
+          iconBg="#e6f8ff"
+        />
+        <StatCard
+          icon={<FiTrendingUp />}
+          label="Ventas del Mes"
+          value={loading ? "…" : fmt(monthlySales)}
+          sub="Ventas registradas"
+          iconBg="#d4eddf"
+        />
+        <StatCard
+          icon={<FiTrendingDown />}
+          label="Salidas del Mes"
+          value={loading ? "…" : fmt(monthlyOutflows)}
+          sub="Gastos y retiros"
+          iconBg="#fde8e6"
+        />
       </div>
 
       {/* ── Account cards ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        {/* CAJA */}
-        <div
-          className="card"
-          style={{ padding: 22, borderLeft: "4px solid var(--accent)" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              marginBottom: 14,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--text3)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 4,
-                }}
-              >
-                <>
-                  <FiDollarSign /> Caja Física
-                </>
-              </div>
-              <div
-                style={{
-                  fontSize: 30,
-                  fontWeight: 800,
-                  color: loading ? "var(--text3)" : "var(--text)",
-                }}
-              >
-                {loading ? "…" : fmt(balanceCaja)}
-              </div>
-            </div>
-            {isAdmin() && (
-              <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  className="btn btn-sm btn-ghost"
-                  onClick={() => openDeposit("caja")}
-                >
-                  + Ingresar
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => openWithdraw("caja")}
-                >
-                  − Retirar
-                </button>
-              </div>
-            )}
+      <div className="treasury-accounts">
+        <div className="account-card" style={{ borderLeftColor: "var(--accent)" }}>
+          <div className="account-label">
+            <FiDollarSign /> Caja Física
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div
-              style={{
-                flex: 1,
-                background: "var(--green-light)",
-                borderRadius: 8,
-                padding: "8px 12px",
-              }}
-            >
-              <div
-                style={{ fontSize: 11, color: "var(--green)", fontWeight: 600 }}
-              >
-                ENTRADAS MES
-              </div>
-              <div
-                style={{ fontWeight: 700, fontSize: 14, color: "var(--green)" }}
-              >
-                {fmt(monthly("caja", "in"))}
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                background: "var(--red-light)",
-                borderRadius: 8,
-                padding: "8px 12px",
-              }}
-            >
-              <div
-                style={{ fontSize: 11, color: "var(--red)", fontWeight: 600 }}
-              >
-                SALIDAS MES
-              </div>
-              <div
-                style={{ fontWeight: 700, fontSize: 14, color: "var(--red)" }}
-              >
-                {fmt(monthly("caja", "out"))}
-              </div>
-            </div>
+          <div className="account-balance">
+            {loading ? "…" : fmt(balanceCaja)}
           </div>
+          {isAdmin() && (
+            <div className="account-actions">
+              <button
+                className="btn btn-sm btn-ghost"
+                onClick={() => openDeposit("caja")}
+              >
+                + Ingresar
+              </button>
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => openWithdraw("caja")}
+              >
+                − Retirar
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* SINPE */}
-        <div
-          className="card"
-          style={{ padding: 22, borderLeft: "4px solid var(--blue)" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              marginBottom: 14,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--text3)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 4,
-                }}
-              >
-                <>
-                  <FiSmartphone /> Cuenta SINPE
-                </>
-              </div>
-              <div
-                style={{
-                  fontSize: 30,
-                  fontWeight: 800,
-                  color: loading ? "var(--text3)" : "var(--text)",
-                }}
-              >
-                {loading ? "…" : fmt(balanceSinpe)}
-              </div>
-            </div>
-            {isAdmin() && (
-              <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  className="btn btn-sm btn-ghost"
-                  onClick={() => openDeposit("sinpe")}
-                >
-                  + Ingresar
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => openWithdraw("sinpe")}
-                >
-                  − Retirar
-                </button>
-              </div>
-            )}
+        <div className="account-card" style={{ borderLeftColor: "var(--blue)" }}>
+          <div className="account-label">
+            <FiSmartphone /> Cuenta SINPE
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div className="account-balance">
+            {loading ? "…" : fmt(balanceSinpe)}
+          </div>
+          {isAdmin() && (
+            <div className="account-actions">
+              <button
+                className="btn btn-sm btn-ghost"
+                onClick={() => openDeposit("sinpe")}
+              >
+                + Ingresar
+              </button>
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => openWithdraw("sinpe")}
+              >
+                − Retirar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Monthly history ── */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <h3>Historial Mensual</h3>
+        </div>
+        <div className="month-list">
+          {monthlyHistoryRows.length === 0 ? (
             <div
               style={{
-                flex: 1,
-                background: "var(--green-light)",
-                borderRadius: 8,
-                padding: "8px 12px",
+                padding: "30px 20px",
+                textAlign: "center",
+                color: "var(--text3)",
+                fontSize: 13,
               }}
             >
-              <div
-                style={{ fontSize: 11, color: "var(--green)", fontWeight: 600 }}
-              >
-                ENTRADAS MES
-              </div>
-              <div
-                style={{ fontWeight: 700, fontSize: 14, color: "var(--green)" }}
-              >
-                {fmt(monthly("sinpe", "in"))}
-              </div>
+              No hay datos mensuales aún
             </div>
-            <div
-              style={{
-                flex: 1,
-                background: "var(--red-light)",
-                borderRadius: 8,
-                padding: "8px 12px",
-              }}
-            >
-              <div
-                style={{ fontSize: 11, color: "var(--red)", fontWeight: 600 }}
-              >
-                SALIDAS MES
+          ) : (
+            monthlyHistoryRows.map((row) => (
+              <div className="month-row" key={row.month_label}>
+                <span className="month-name">{row.month_label}</span>
+                <div className="month-figures">
+                  <div className="month-figure">
+                    <span className="month-figure-label">Saldo</span>
+                    <span className="month-figure-value">
+                      {fmt(row.balance_end)}
+                    </span>
+                  </div>
+                  <div className="month-figure">
+                    <span className="month-figure-label">Ventas</span>
+                    <span
+                      className="month-figure-value"
+                      style={{ color: "var(--green)" }}
+                    >
+                      {fmt(row.sales)}
+                    </span>
+                  </div>
+                  <div className="month-figure">
+                    <span className="month-figure-label">Salidas</span>
+                    <span
+                      className="month-figure-value"
+                      style={{ color: "var(--red)" }}
+                    >
+                      {fmt(row.outflows)}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div
-                style={{ fontWeight: 700, fontSize: 14, color: "var(--red)" }}
-              >
-                {fmt(monthly("sinpe", "out"))}
-              </div>
-            </div>
-          </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -469,7 +306,8 @@ export default function TreasuryPanel() {
             No hay movimientos registrados aún
           </div>
         ) : (
-          <div className="table-wrap">
+          <>
+          <div className="table-wrap desktop-only">
             <table>
               <thead>
                 <tr>
@@ -552,44 +390,75 @@ export default function TreasuryPanel() {
                 ))}
               </tbody>
             </table>
-            {/* Pagination */}
-            {movTotal > 20 && (
-              <div
+          </div>
+
+          <div className="txn-list mobile-only">
+            {movements.map((m) => (
+              <div className="txn-row" key={m.id}>
+                <span
+                  className="txn-amount"
+                  style={{ color: DIR_COLOR[m.direction] }}
+                >
+                  {m.direction === "entrada" ? "+" : "−"}
+                  {fmt(m.amount)}
+                </span>
+                <div className="txn-main">
+                  <div className="txn-top">
+                    <span className="txn-category">{m.category}</span>
+                    <span
+                      className={`badge ${m.account_type === "caja" ? "badge-yellow" : "badge-blue"}`}
+                    >
+                      {m.account_type === "caja" ? "Caja" : "SINPE"}
+                    </span>
+                  </div>
+                  <div className="txn-meta">
+                    {fmtDateTime(m.created_at)}
+                    {m.user_name ? ` · ${m.user_name}` : ""}
+                    {m.description ? ` · ${m.description}` : ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {movTotal > 20 && (
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                padding: "12px 20px",
+                borderTop: "1px solid var(--border)",
+              }}
+            >
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={movPage <= 1}
+                onClick={() => setMovPage((p) => p - 1)}
+              >
+                ← Anterior
+              </button>
+              <span
                 style={{
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                  padding: "12px 20px",
-                  borderTop: "1px solid var(--border)",
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "var(--text3)",
                 }}
               >
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={movPage <= 1}
-                  onClick={() => setMovPage((p) => p - 1)}
-                >
-                  ← Anterior
-                </button>
-                <span
-                  style={{
-                    flex: 1,
-                    textAlign: "center",
-                    fontSize: 12,
-                    color: "var(--text3)",
-                  }}
-                >
-                  Página {movPage} · {movTotal} movimientos
-                </span>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={movPage * 20 >= movTotal}
-                  onClick={() => setMovPage((p) => p + 1)}
-                >
-                  Siguiente →
-                </button>
-              </div>
-            )}
-          </div>
+                Página {movPage} · {movTotal} movimientos
+              </span>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={movPage * 20 >= movTotal}
+                onClick={() => setMovPage((p) => p + 1)}
+              >
+                Siguiente →
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
 

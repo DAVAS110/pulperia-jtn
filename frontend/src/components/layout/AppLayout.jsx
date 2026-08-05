@@ -13,7 +13,7 @@ import {
   FiAlertTriangle,
   FiCreditCard,
   FiRepeat,
-  FiTrendingUp,
+  FiDollarSign,
   FiSettings,
   FiHome,
   FiMenu,
@@ -32,7 +32,7 @@ const NAV = [
   {
     label: "Operaciones",
     items: [
-      { to: "/caja", icon: <FiShoppingCart />, label: "Caja / POS" },
+      { to: "/caja", icon: <FiShoppingCart />, label: "Caja" },
       { to: "/combos", icon: <FiGift />, label: "Combos" },
       { to: "/pendientes", icon: <FiClock />, label: "Pendientes" },
       {
@@ -47,10 +47,12 @@ const NAV = [
   },
   {
     label: "Análisis",
-    items: [{ to: "/reportes", icon: <FiTrendingUp />, label: "Reportes" }],
+    adminOnly: true,
+    items: [{ to: "/tesoreria", icon: <FiDollarSign />, label: "Tesorería" }],
   },
   {
     label: "Sistema",
+    adminOnly: true,
     items: [
       { to: "/configuracion", icon: <FiSettings />, label: "Configuración" },
     ],
@@ -58,7 +60,7 @@ const NAV = [
 ];
 
 export default function AppLayout({ children }) {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAdmin } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alertsCount, setAlertsCount] = useState(0);
   const location = useLocation();
@@ -111,27 +113,29 @@ export default function AppLayout({ children }) {
           </div>
         </div>
 
-        {NAV.map((section) => (
-          <div className="nav-section" key={section.label}>
-            <div className="nav-section-label">{section.label}</div>
-            {section.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  `nav-item ${isActive ? "active" : ""}`
-                }
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {item.label}
-                {item.badge && alertsCount > 0 && (
-                  <span className="nav-badge">{alertsCount}</span>
-                )}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+        {NAV.filter((section) => !section.adminOnly || isAdmin()).map(
+          (section) => (
+            <div className="nav-section" key={section.label}>
+              <div className="nav-section-label">{section.label}</div>
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    `nav-item ${isActive ? "active" : ""}`
+                  }
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  {item.label}
+                  {item.badge && alertsCount > 0 && (
+                    <span className="nav-badge">{alertsCount}</span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          ),
+        )}
 
         <div className="sidebar-footer">
           <div className="user-info-sidebar">
@@ -175,8 +179,8 @@ export default function AppLayout({ children }) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Cierre de caja — visible para todos */}
-            <DailyClosure />
+            {/* Cierre de caja — incluye saldos de tesorería, solo admin */}
+            {isAdmin() && <DailyClosure />}
 
             {/* Alertas: stock bajo + productos por caducar */}
             {alertsCount > 0 && (
