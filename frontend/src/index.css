@@ -1425,6 +1425,207 @@ td {
   color: white;
 }
 
+/* ─── SCHEDULE (Horarios) ─────────────────── */
+.schedule-nav {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.schedule-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.schedule-nav h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.schedule-weekday {
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.schedule-cell {
+  min-height: 92px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.schedule-cell:nth-child(7n) {
+  border-right: none;
+}
+.schedule-cell.empty {
+  background: var(--surface2);
+}
+.schedule-cell.open {
+  cursor: pointer;
+  background: var(--accent-light);
+  transition: var(--transition);
+}
+.schedule-cell.open:hover {
+  border-color: var(--accent);
+}
+.schedule-cell.today .schedule-day-num {
+  color: var(--accent2);
+  font-weight: 800;
+}
+.schedule-day-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+}
+.schedule-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+}
+.schedule-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+}
+.schedule-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.schedule-empty-hint {
+  font-size: 10.5px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+/* ─── SCHEDULE LIST (mobile) ─────────────── */
+.schedule-list {
+  flex-direction: column;
+  padding: 4px 16px;
+}
+.schedule-list-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.schedule-list-row:last-child {
+  border-bottom: none;
+}
+.schedule-list-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+.schedule-list-date strong {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+.schedule-list-date span {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ─── SCHEDULE ASSIGN MODAL ───────────────── */
+.schedule-assign-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.schedule-assign-row:last-child {
+  border-bottom: none;
+}
+.schedule-assign-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  flex: 1 1 90px;
+  min-width: 80px;
+}
+.schedule-assign-row select,
+.schedule-assign-row input {
+  padding: 6px 9px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: "Sora", sans-serif;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+}
+.schedule-assign-row input {
+  flex: 1;
+  min-width: 110px;
+}
+.schedule-assign-note {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--text3);
+}
+.schedule-add-row {
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.schedule-add-row select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: "Sora", sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+}
+
+/* ─── SCHEDULE SUMMARY (Horarios) ─────────── */
+.schedule-summary {
+  display: flex;
+  flex-direction: column;
+}
+.schedule-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.schedule-summary-row:last-child {
+  border-bottom: none;
+}
+.schedule-summary-name {
+  font-weight: 600;
+}
+.schedule-summary-figures {
+  display: flex;
+  gap: 14px;
+  color: var(--text3);
+}
+
 /* ─── ACTIVITY ───────────────────────────── */
 .activity-list {
   display: flex;

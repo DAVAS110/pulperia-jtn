@@ -18,6 +18,7 @@ const daily = require("../controllers/dailyReport.controller");
 const combos = require("../controllers/combos.controller");
 const image = require("../controllers/image.controller");
 const debts = require("../controllers/debts.controller");
+const shifts = require("../controllers/shifts.controller");
 
 // AUTH
 router.post("/auth/login", loginLimiter, validateLogin, auth.login);
@@ -99,6 +100,13 @@ router.post(
   validateTreasuryMovement,
   treasury.deposit,
 );
+
+// SHIFTS (horarios de empleados) — todos ven, solo admin edita
+router.get("/shifts", authenticate, shifts.list);
+router.get("/shifts/summary", authenticate, shifts.summary);
+router.post("/shifts", authenticate, requireAdmin, writeLimiter, shifts.create);
+router.put("/shifts/:id", authenticate, requireAdmin, shifts.update);
+router.delete("/shifts/:id", authenticate, requireAdmin, shifts.remove);
 
 // REPORTS
 router.get("/reports/dashboard", authenticate, reports.dashboard);

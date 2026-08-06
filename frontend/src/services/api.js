@@ -78,6 +78,14 @@ export const debtsAPI = {
   pay: (id, data) => api.post(`/debts/${id}/pay`, data),
 };
 
+export const shiftsAPI = {
+  list: (params) => api.get("/shifts", { params }),
+  summary: (params) => api.get("/shifts/summary", { params }),
+  create: (data) => api.post("/shifts", data),
+  update: (id, data) => api.put(`/shifts/${id}`, data),
+  delete: (id) => api.delete(`/shifts/${id}`),
+};
+
 export const treasuryAPI = {
   getSummary: () => api.get("/treasury"),
   listMovements: (params) => api.get("/treasury/movements", { params }),

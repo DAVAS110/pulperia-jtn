@@ -118,6 +118,21 @@ CREATE TABLE IF NOT EXISTS debts (
 CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);
 CREATE INDEX IF NOT EXISTS idx_debts_sale ON debts(sale_id);
 
+-- ─── SHIFTS (horarios de empleados: jueves/domingo) ─────────
+CREATE TABLE IF NOT EXISTS shifts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  shift_date DATE NOT NULL,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'programado'
+    CHECK (status IN ('programado','cumplido','cambiado','ausente')),
+  note TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (shift_date, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(shift_date);
+
 -- ─── INDEXES ─────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);

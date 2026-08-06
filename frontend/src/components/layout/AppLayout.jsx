@@ -14,6 +14,7 @@ import {
   FiCreditCard,
   FiRepeat,
   FiDollarSign,
+  FiCalendar,
   FiSettings,
   FiHome,
   FiMenu,
@@ -44,6 +45,10 @@ const NAV = [
       { to: "/ventas", icon: <FiCreditCard />, label: "Ventas" },
       { to: "/movimientos", icon: <FiRepeat />, label: "Movimientos" },
     ],
+  },
+  {
+    label: "Equipo",
+    items: [{ to: "/horarios", icon: <FiCalendar />, label: "Horarios" }],
   },
   {
     label: "Análisis",

@@ -23,6 +23,7 @@ const Configuracion = lazy(() => import("./pages/Configuracion"));
 const Combos = lazy(() => import("./pages/Combos"));
 const Pendientes = lazy(() => import("./pages/Pendientes"));
 const Tesoreria = lazy(() => import("./pages/Tesoreria"));
+const Horarios = lazy(() => import("./pages/Horarios"));
 
 function PrivateRoute({ children }) {
   const { user } = useAuthStore();
@@ -84,6 +85,7 @@ function App() {
                       />
                       <Route path="/combos" element={<Combos />} />
                       <Route path="/pendientes" element={<Pendientes />} />
+                      <Route path="/horarios" element={<Horarios />} />
                       <Route
                         path="/tesoreria"
                         element={
