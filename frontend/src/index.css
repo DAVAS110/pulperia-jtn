@@ -645,13 +645,6 @@ h3 {
 .btn-green:hover {
   background: var(--green-dark);
 }
-.btn-blue {
-  background: var(--blue);
-  color: white;
-}
-.btn-blue:hover {
-  background: var(--blue-dark);
-}
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -840,7 +833,7 @@ td {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(26, 18, 8, 0.55);
+  background: rgba(7, 34, 39, 0.55);
   backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
@@ -2030,7 +2023,7 @@ td {
     right: 0;
     z-index: 90;
     border-radius: 20px 20px 0 0 !important;
-    box-shadow: 0 -4px 24px rgba(26, 18, 8, 0.18) !important;
+    box-shadow: 0 -4px 24px rgba(7, 34, 39, 0.18) !important;
     max-height: 60vh;
     display: flex;
     flex-direction: column;
@@ -2097,7 +2090,7 @@ td {
     height: auto;
     max-height: 45vh;
     border-radius: 16px 16px 0 0 !important;
-    box-shadow: 0 -4px 20px rgba(26, 18, 8, 0.15) !important;
+    box-shadow: 0 -4px 20px rgba(7, 34, 39, 0.15) !important;
     display: flex;
     flex-direction: column;
     overflow: auto;

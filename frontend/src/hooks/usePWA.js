@@ -123,7 +123,7 @@ export function sendLowStockNotification(products) {
     .join(", ");
   const more = count > 3 ? ` y ${count - 3} más` : "";
 
-  new Notification("⚠️ Stock Bajo — Pulperia JTN", {
+  new Notification("Stock Bajo — Pulperia JTN", {
     body: `${names}${more} necesitan reposición`,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-72.png",

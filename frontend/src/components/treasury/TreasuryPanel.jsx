@@ -355,7 +355,15 @@ export default function TreasuryPanel() {
                           color: DIR_COLOR[m.direction],
                         }}
                       >
-                        {m.direction === "entrada" ? "▲ Entrada" : "▼ Salida"}
+                        {m.direction === "entrada" ? (
+                          <>
+                            <FiTrendingUp /> Entrada
+                          </>
+                        ) : (
+                          <>
+                            <FiTrendingDown /> Salida
+                          </>
+                        )}
                       </span>
                     </td>
                     <td style={{ fontSize: 13, color: "var(--text2)" }}>

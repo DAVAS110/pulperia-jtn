@@ -27,6 +27,7 @@ const useAuthStore = create((set, get) => ({
     } catch {
       // ignore logout failure
     }
+    localStorage.removeItem("cart"); // no dejar el carrito de la sesión anterior visible
     set({ user: null });
   },
 

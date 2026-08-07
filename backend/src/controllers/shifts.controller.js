@@ -18,6 +18,7 @@ const list = async (req, res) => {
       WHERE s.shift_date >= to_date($1, 'YYYY-MM')
         AND s.shift_date < (to_date($1, 'YYYY-MM') + INTERVAL '1 month')
       ORDER BY s.shift_date, u.name
+      LIMIT 500
     `,
       [month],
     );
@@ -51,6 +52,7 @@ const summary = async (req, res) => {
       WHERE s.shift_date >= $1 AND s.shift_date <= $2
       GROUP BY u.id, u.name
       ORDER BY total DESC
+      LIMIT 200
     `,
       [date_from, date_to],
     );

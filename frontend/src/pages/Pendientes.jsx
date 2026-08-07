@@ -12,6 +12,7 @@ import {
   FiEye,
   FiDownload,
   FiCreditCard,
+  FiCheckCircle,
 } from "react-icons/fi";
 
 export default function Pendientes() {
@@ -439,7 +440,11 @@ export default function Pendientes() {
           price: parseFloat(i.unit_price),
         }))}
         title={paying ? `Cobrar a ${paying.customer_name}` : "Cobrar"}
-        confirmLabel="✅ Confirmar Cobro"
+        confirmLabel={
+          <>
+            <FiCheckCircle /> Confirmar Cobro
+          </>
+        }
       />
     </>
   );

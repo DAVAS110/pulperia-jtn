@@ -88,21 +88,28 @@ export default function Horarios() {
   const loadSeq = useRef(0);
   const summarySeq = useRef(0);
 
-  const load = useCallback(async () => {
-    const seq = ++loadSeq.current;
-    setLoading(true);
-    try {
-      const { data } = await shiftsAPI.list({
-        month: `${year}-${pad2(month + 1)}`,
-      });
-      if (seq !== loadSeq.current) return; // llegó una carga más nueva primero
-      setShifts(data.shifts);
-    } catch {
-      if (seq === loadSeq.current) toast.error("Error al cargar horarios");
-    } finally {
-      if (seq === loadSeq.current) setLoading(false);
-    }
-  }, [year, month]);
+  // silent=true: refresco de fondo tras editar (no tapa el calendario con
+  // el spinner ni muestra error — la edición ya se reflejó de forma
+  // optimista, esto solo reconcilia con el servidor).
+  const load = useCallback(
+    async (silent = false) => {
+      const seq = ++loadSeq.current;
+      if (!silent) setLoading(true);
+      try {
+        const { data } = await shiftsAPI.list({
+          month: `${year}-${pad2(month + 1)}`,
+        });
+        if (seq !== loadSeq.current) return; // llegó una carga más nueva primero
+        setShifts(data.shifts);
+      } catch {
+        if (seq === loadSeq.current && !silent)
+          toast.error("Error al cargar horarios");
+      } finally {
+        if (seq === loadSeq.current && !silent) setLoading(false);
+      }
+    },
+    [year, month],
+  );
 
   // Pequeña espera antes de pedir datos: si el usuario navega varios meses
   // rápido seguido, esto evita disparar una petición por cada click (lo
@@ -138,27 +145,35 @@ export default function Horarios() {
 
   // Resumen agregado por persona (turnos, ausencias, cambios) para el
   // período elegido — el backend hace el conteo, nunca viajan filas crudas.
-  // También con la misma pequeña espera para no disparar una petición por
-  // cada click al navegar rápido entre meses.
-  useEffect(() => {
-    const handle = setTimeout(() => {
+  // silent=true: refresco de fondo tras editar un turno, sin tapar la
+  // tarjeta con el spinner.
+  const fetchSummary = useCallback(
+    (silent = false) => {
       const seq = ++summarySeq.current;
       const [date_from, date_to] = periodRange(year, month, summaryPeriod);
-      setSummaryLoading(true);
-      shiftsAPI
+      if (!silent) setSummaryLoading(true);
+      return shiftsAPI
         .summary({ date_from, date_to })
         .then(({ data }) => {
           if (seq === summarySeq.current) setSummary(data.summary);
         })
         .catch(() => {
-          if (seq === summarySeq.current) toast.error("Error al cargar el resumen");
+          if (seq === summarySeq.current && !silent)
+            toast.error("Error al cargar el resumen");
         })
         .finally(() => {
-          if (seq === summarySeq.current) setSummaryLoading(false);
+          if (seq === summarySeq.current && !silent) setSummaryLoading(false);
         });
-    }, 300);
+    },
+    [year, month, summaryPeriod],
+  );
+
+  // Misma pequeña espera que la carga del calendario, para no disparar una
+  // petición por cada click al navegar rápido entre meses/períodos.
+  useEffect(() => {
+    const handle = setTimeout(() => fetchSummary(false), 300);
     return () => clearTimeout(handle);
-  }, [year, month, summaryPeriod]);
+  }, [fetchSummary]);
 
   const changeMonth = (delta) => {
     let m = month + delta;
@@ -196,14 +211,37 @@ export default function Horarios() {
       })
     : "";
 
+  // Las tres acciones de abajo actualizan el calendario al instante (antes
+  // de que responda el servidor) y recién después sincronizan de fondo, en
+  // vez de esperar el viaje de ida y vuelta con el calendario tapado por un
+  // spinner. Si el servidor rechaza el cambio, se revierte y se avisa.
+
   const addAssignment = async () => {
-    if (!addingUserId) return;
+    if (!addingUserId || !dayModal) return;
+    const employee = employees.find((e) => e.id === addingUserId);
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
+      shift_date: `${dayModal}T00:00:00.000Z`,
+      user_id: addingUserId,
+      status: "programado",
+      note: null,
+      user_name: employee?.name || "…",
+    };
+    setShifts((prev) => [...prev, optimistic]);
+    setAddingUserId("");
     setSaving(true);
     try {
-      await shiftsAPI.create({ shift_date: dayModal, user_id: addingUserId });
-      setAddingUserId("");
-      await load();
+      const { data } = await shiftsAPI.create({
+        shift_date: dayModal,
+        user_id: addingUserId,
+      });
+      setShifts((prev) =>
+        prev.map((s) => (s.id === tempId ? { ...s, id: data.id } : s)),
+      );
+      fetchSummary(true);
     } catch (err) {
+      setShifts((prev) => prev.filter((s) => s.id !== tempId));
       toast.error(err.response?.data?.error || "Error al asignar");
     } finally {
       setSaving(false);
@@ -211,19 +249,25 @@ export default function Horarios() {
   };
 
   const updateAssignment = async (id, patch) => {
+    const previous = shifts;
+    setShifts((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
     try {
       await shiftsAPI.update(id, patch);
-      await load();
+      fetchSummary(true);
     } catch (err) {
+      setShifts(previous);
       toast.error(err.response?.data?.error || "Error al actualizar");
     }
   };
 
   const removeAssignment = async (id) => {
+    const previous = shifts;
+    setShifts((prev) => prev.filter((s) => s.id !== id));
     try {
       await shiftsAPI.delete(id);
-      await load();
+      fetchSummary(true);
     } catch {
+      setShifts(previous);
       toast.error("Error al quitar");
     }
   };

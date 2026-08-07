@@ -100,12 +100,6 @@ export default function DailyClosure() {
         date_from: from,
         date_to: to,
       });
-      console.log("[DailyClosure] Rango:", from, "->", to);
-      console.log(
-        "[DailyClosure] sales_detail:",
-        res?.sales_detail?.length,
-        res?.sales_detail,
-      );
       setData(res);
     } catch (err) {
       console.error("[DailyClosure] Error:", err);
@@ -647,21 +641,21 @@ export default function DailyClosure() {
                 label="Ventas efectivo"
                 value={fmt(totalCashSales)}
                 sub={`${data.sales_by_method?.find((s) => s.payment_method === "efectivo")?.count ?? 0} ventas`}
-                iconBg="#f4f6f8"
+                iconBg="var(--surface2)"
               />
               <StatCard
                 icon={<FiSmartphone />}
                 label="Ventas SINPE"
                 value={fmt(totalSinpeSales)}
                 sub={`${data.sales_by_method?.find((s) => s.payment_method === "sinpe")?.count ?? 0} ventas`}
-                iconBg="#f4f6f8"
+                iconBg="var(--surface2)"
               />
               <StatCard
                 icon={<FiRepeat />}
                 label="Movimientos inventario"
                 value={totalInventoryMovements}
                 sub="Registrados en el período"
-                iconBg="#f4f6f8"
+                iconBg="var(--surface2)"
               />
             </div>
 

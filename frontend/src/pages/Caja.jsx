@@ -17,8 +17,8 @@ import {
   FiTrash2,
   FiDollarSign,
   FiSmartphone,
-  FiSmile,
   FiClock,
+  FiCheckCircle,
 } from "react-icons/fi";
 
 export default function Caja() {
@@ -878,8 +878,8 @@ export default function Caja() {
       >
         {lastSale && (
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>
-              <FiSmile />
+            <div style={{ fontSize: 52, marginBottom: 12, color: "var(--green)" }}>
+              <FiCheckCircle />
             </div>
             <div
               style={{

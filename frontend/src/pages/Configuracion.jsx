@@ -269,7 +269,7 @@ export default function Configuracion() {
                           <span
                             className={`badge ${u.is_active ? "badge-green" : "badge-red"}`}
                           >
-                            {u.is_active ? "● Activo" : "○ Inactivo"}
+                            {u.is_active ? "Activo" : "Inactivo"}
                           </span>
                         </td>
                         <td style={{ fontSize: 12, color: "var(--text3)" }}>

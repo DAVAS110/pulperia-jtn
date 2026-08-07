@@ -191,7 +191,8 @@ export default function AppLayout({ children }) {
             {alertsCount > 0 && (
               <NavLink to="/alertas" style={{ textDecoration: "none" }}>
                 <span className="badge badge-red">
-                  ⚠️ {alertsCount} alerta{alertsCount !== 1 ? "s" : ""}
+                  <FiAlertTriangle /> {alertsCount} alerta
+                  {alertsCount !== 1 ? "s" : ""}
                 </span>
               </NavLink>
             )}

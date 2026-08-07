@@ -36,7 +36,7 @@ export default function QRPage() {
     QRCode.toDataURL(data, {
       width: 200,
       margin: 2,
-      color: { dark: "#1a1208", light: "#ffffff" },
+      color: { dark: "#072227", light: "#ffffff" },
     })
       .then(setQrDataUrl)
       .catch(() => {});
@@ -233,7 +233,7 @@ export default function QRPage() {
                   <FiPrinter /> Imprimir QR
                 </button>
                 <button
-                  className="btn btn-blue"
+                  className="btn btn-accent"
                   onClick={scanning ? stopScanner : startScanner}
                 >
                   <FiCamera /> {scanning ? "Detener cámara" : "Escanear"}

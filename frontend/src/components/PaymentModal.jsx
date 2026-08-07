@@ -10,6 +10,7 @@ import {
   FiImage,
   FiX,
   FiDownload,
+  FiCheckCircle,
 } from "react-icons/fi";
 
 // Modal de cobro reutilizable (efectivo/sinpe + foto de comprobante).
@@ -22,7 +23,11 @@ export default function PaymentModal({
   total,
   items,
   title = "Confirmar Pago",
-  confirmLabel = "✅ Confirmar Venta",
+  confirmLabel = (
+    <>
+      <FiCheckCircle /> Confirmar Venta
+    </>
+  ),
 }) {
   const [payMethod, setPayMethod] = useState("efectivo");
   const [cashReceived, setCashReceived] = useState("");

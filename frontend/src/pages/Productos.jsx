@@ -18,6 +18,7 @@ import {
   FiEdit,
   FiTrash2,
   FiSave,
+  FiCheck,
 } from "react-icons/fi";
 import useAuthStore from "../store/authStore";
 
@@ -308,7 +309,9 @@ export default function Productos() {
                             <FiAlertTriangle /> Bajo
                           </>
                         ) : (
-                          "✓ OK"
+                          <>
+                            <FiCheck /> OK
+                          </>
                         )}
                       </span>
                     </td>
