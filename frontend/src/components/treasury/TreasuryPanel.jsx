@@ -210,7 +210,7 @@ export default function TreasuryPanel() {
       {/* ── Monthly history ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
-          <h3>Historial Mensual</h3>
+          <h2>Historial Mensual</h2>
         </div>
         <div className="month-list">
           {monthlyHistoryRows.length === 0 ? (
@@ -263,7 +263,7 @@ export default function TreasuryPanel() {
       {/* ── Movement history ── */}
       <div className="card">
         <div className="card-header history-header">
-          <h3>Historial de Movimientos</h3>
+          <h2>Historial de Movimientos</h2>
           <div className="history-filter-tabs">
             {[
               ["all", "Todos"],

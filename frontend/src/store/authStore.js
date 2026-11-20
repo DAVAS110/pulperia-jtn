@@ -4,6 +4,7 @@ import { authAPI } from "../services/api";
 const useAuthStore = create((set, get) => ({
   user: null, // 🔐 NO USAR localStorage - cookies httpOnly manejan persistencia
   loading: false,
+  checking: true, // true hasta que validateSession termina (evita redirigir a /login en recargas)
   error: null,
 
   login: async (email, password) => {
@@ -35,10 +36,10 @@ const useAuthStore = create((set, get) => ({
     try {
       const { data } = await authAPI.me();
       // Cookie válida = servidor responde con datos
-      set({ user: data.user });
+      set({ user: data.user, checking: false });
     } catch {
       // Cookie inválida/expirada = servidor responde 401
-      set({ user: null });
+      set({ user: null, checking: false });
     }
   },
 

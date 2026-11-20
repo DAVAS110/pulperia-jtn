@@ -14,7 +14,6 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem("user");
       localStorage.removeItem("cart"); // sesión terminó, no dejar el carrito visible
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";

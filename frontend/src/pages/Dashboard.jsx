@@ -82,7 +82,7 @@ export default function Dashboard() {
       <div className="dashboard-grid">
         <Card>
           <CardHeader>
-            <h3>Actividad Reciente</h3>
+            <h2>Actividad Reciente</h2>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => navigate("/movimientos")}
@@ -123,7 +123,7 @@ export default function Dashboard() {
                             <strong>Venta registrada</strong> — {a.reason}
                             <div
                               style={{
-                                fontSize: 11.5,
+                                fontSize: 12,
                                 color: "var(--text3)",
                                 marginTop: 1,
                               }}
@@ -137,7 +137,7 @@ export default function Dashboard() {
                             {a.quantity} u.
                             <div
                               style={{
-                                fontSize: 11.5,
+                                fontSize: 12,
                                 color: "var(--text3)",
                                 marginTop: 1,
                               }}
@@ -164,7 +164,7 @@ export default function Dashboard() {
         >
           <Card>
             <CardHeader>
-              <h3>Acciones Rápidas</h3>
+              <h2>Acciones Rápidas</h2>
             </CardHeader>
             <CardBody className="quick-actions">
               {[
@@ -202,9 +202,9 @@ export default function Dashboard() {
           {!loading && (data?.low_stock_count > 0 || data?.expiring_count > 0) && (
             <Card style={{ border: "1.5px solid var(--danger-border)" }}>
               <CardHeader style={{ background: "var(--red-light)" }}>
-                <h3 style={{ color: "var(--red)" }}>
+                <h2 style={{ color: "var(--red)" }}>
                   <FiAlertTriangle /> Alertas
-                </h3>
+                </h2>
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => navigate("/alertas")}

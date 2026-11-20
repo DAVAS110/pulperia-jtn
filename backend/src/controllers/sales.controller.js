@@ -4,8 +4,9 @@ const { getIO } = require("../socket");
 // GET /api/sales
 const list = async (req, res) => {
   try {
-    const { page = 1, limit = 50, date_from, date_to } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page = 1, limit: rawLimit = 50, date_from, date_to } = req.query;
+    const limit = Math.min(Math.max(parseInt(rawLimit) || 50, 1), 500);
+    const offset = (Math.max(parseInt(page) || 1, 1) - 1) * limit;
     const params = [];
     const conditions = ["s.status = 'completada'"];
 

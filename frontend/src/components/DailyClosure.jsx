@@ -430,7 +430,7 @@ export default function DailyClosure() {
         filename: `cierre-caja-${suffix}.pdf`,
         html: `
           <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
-            <div style="background:#0284c7;color:white;padding:24px;border-radius:12px 12px 0 0;border-bottom:4px solid #0ea5e9">
+            <div style="background:#0284c7;color:white;padding:24px;border-radius:12px 12px 0 0">
               <h2 style="margin:0;font-size:22px">Pulperia JTN</h2>
               <p style="margin:6px 0 0;opacity:0.8;font-size:14px">${isRange ? "Reporte de Ventas" : "Cierre de Caja"} &mdash; ${periodLabel}</p>
             </div>

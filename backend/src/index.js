@@ -2,6 +2,7 @@ require("dotenv").config();
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const { Server } = require("socket.io");
 const routes = require("./routes");
 const { setIO } = require("./socket");
@@ -14,15 +15,26 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const isProduction = process.env.NODE_ENV === "production";
+if (isProduction && (!process.env.FRONTEND_URL || !process.env.JWT_SECRET)) {
+  console.error("FRONTEND_URL y JWT_SECRET son obligatorios en producción");
+  process.exit(1);
+}
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+  console.warn("JWT_SECRET es corto: usa al menos 32 caracteres");
+}
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL || "http://localhost:5173";
+
 // Detrás de un único reverse proxy (Render). Necesario para que
 // express-rate-limit pueda leer X-Forwarded-For de forma segura;
 // sin esto, cada request /api lanza ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
 app.set("trust proxy", 1);
 
 // ─── MIDDLEWARE ───────────────────────────────────────────
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*",
+    origin: ALLOWED_ORIGIN,
     credentials: true,
   }),
 );
@@ -56,7 +68,7 @@ app.use((err, req, res, next) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "*",
+    origin: ALLOWED_ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
   },

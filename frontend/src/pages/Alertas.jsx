@@ -46,9 +46,9 @@ export default function Alertas() {
         <>
           {lowStock.length > 0 && (
             <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <h2 style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Stock Bajo ({lowStock.length})
-              </h3>
+              </h2>
               <div className="card" style={{ maxWidth: 700 }}>
                 {lowStock.map((p) => {
                   const pct = Math.min(100, (p.stock / p.min_stock) * 100);
@@ -79,9 +79,9 @@ export default function Alertas() {
 
           {expiring.length > 0 && (
             <div>
-              <h3 style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <h2 style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Por Caducar ({expiring.length})
-              </h3>
+              </h2>
               <div className="card" style={{ maxWidth: 700 }}>
                 {expiring.map((p) => {
                   const days = daysUntil(p.expiration_date);

@@ -3,8 +3,9 @@ const { pool } = require('../config/database');
 // GET /api/inventory
 const list = async (req, res) => {
   try {
-    const { product_id, type, page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { product_id, type, page = 1, limit: rawLimit = 50 } = req.query;
+    const limit = Math.min(Math.max(parseInt(rawLimit) || 50, 1), 500);
+    const offset = (Math.max(parseInt(page) || 1, 1) - 1) * limit;
     const params = [];
     const conditions = [];
 

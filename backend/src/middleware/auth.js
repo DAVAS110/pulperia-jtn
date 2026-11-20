@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
 const { pool } = require("../config/database");
 
+// Caché corto del usuario para no consultar la BD en cada request.
+const USER_TTL_MS = 30 * 1000;
+const userCache = new Map();
+const invalidateUser = (id) => userCache.delete(String(id));
+
 const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -26,10 +31,18 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: "Token no proporcionado" });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { rows } = await pool.query(
-      "SELECT id, name, email, role, is_active FROM users WHERE id = $1",
-      [decoded.userId],
-    );
+    const key = String(decoded.userId);
+    const cached = userCache.get(key);
+    let user = cached && cached.exp > Date.now() ? cached.user : null;
+    if (!user) {
+      const { rows } = await pool.query(
+        "SELECT id, name, email, role, is_active FROM users WHERE id = $1",
+        [decoded.userId],
+      );
+      user = rows[0];
+      if (user) userCache.set(key, { user, exp: Date.now() + USER_TTL_MS });
+    }
+    const rows = [user];
     if (!rows[0] || !rows[0].is_active) {
       return res
         .status(401)
@@ -51,4 +64,4 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireAdmin };
+module.exports = { authenticate, requireAdmin, invalidateUser };

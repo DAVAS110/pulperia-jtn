@@ -3,8 +3,9 @@ const { pool } = require("../config/database");
 // GET /api/combos
 const list = async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 500);
+    const offset = (page - 1) * limit;
 
     const [dataRes, countRes] = await Promise.all([
       pool.query(
@@ -51,8 +52,9 @@ const list = async (req, res) => {
 // GET /api/combos/all  (incluyendo inactivos, para admin)
 const listAll = async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 500);
+    const offset = (page - 1) * limit;
 
     const [dataRes, countRes] = await Promise.all([
       pool.query(

@@ -23,7 +23,7 @@ export default defineConfig({
           // APIs: Network First con fallback a caché
           {
             urlPattern:
-              /^https?:\/\/.*\/api\/(products|categories|sales|reports|inventory|combos|dailyReport|treasury)/,
+              /^https?:\/\/.*\/api\/(products|categories|combos)/,
             handler: "NetworkFirst",
             options: {
               cacheName: "api-cache",

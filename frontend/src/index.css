@@ -4,10 +4,10 @@
   --surface2: #f2fbff;
   --border: #e6f2f8;
   --text: #072227;
-  --text2: #3a6b7a;
-  --text3: #6b98a6;
-  --accent: #0ea5e9; /* primary celeste */
-  --accent2: #0284c7; /* deeper celeste */
+  --text2: #2f5d6c;
+  --text3: #45707e;
+  --accent: #0272aa; /* primary celeste (AA con texto blanco) */
+  --accent2: #025a87; /* deeper celeste */
   --accent-light: #e6f8ff;
   --green: #2d7a4f;
   --green-light: #d4eddf;
@@ -17,8 +17,7 @@
   --green-dark: #256040;
   --blue-dark: #154e8a;
   --danger-border: #f5c6c3;
-  --sidebar-gradient-start: #022833;
-  --sidebar-gradient-end: #053a47;
+  --sidebar-bg: #03303c;
   --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent2));
   --blue: #0369a1;
   --blue-light: #dbeafe;
@@ -73,6 +72,9 @@ h2,
 h3 {
   font-family: "Sora", sans-serif;
 }
+h2 {
+  font-size: 1.17em;
+}
 
 /* ─── LAYOUT ─────────────────────────────── */
 .app-layout {
@@ -83,7 +85,7 @@ h3 {
 /* ─── SIDEBAR ─────────────────────────────── */
 .sidebar {
   width: var(--sidebar-w);
-  background: linear-gradient(180deg, var(--sidebar-gradient-start) 0%, var(--sidebar-gradient-end) 100%);
+  background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -120,8 +122,8 @@ h3 {
   font-weight: 700;
 }
 .sidebar-logo span {
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
   display: block;
 }
 
@@ -129,9 +131,9 @@ h3 {
   padding: 14px 10px 6px;
 }
 .nav-section-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.62);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   padding: 0 8px;
@@ -144,7 +146,7 @@ h3 {
   padding: 10px 11px;
   border-radius: 10px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 13.5px;
   font-weight: 500;
   margin-bottom: 2px;
@@ -208,7 +210,7 @@ h3 {
   font-size: 13px;
 }
 .user-info-sidebar span {
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 11px;
 }
 .logout-btn {
@@ -401,7 +403,7 @@ h3 {
   align-items: center;
   justify-content: space-between;
 }
-.card-header h3 {
+.card-header h2 {
   font-size: 15px;
   font-weight: 700;
 }
@@ -452,7 +454,6 @@ h3 {
 .account-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
   border-radius: var(--radius);
   padding: 18px 20px;
 }
@@ -511,7 +512,7 @@ h3 {
   min-width: 70px;
 }
 .month-figure-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text3);
   text-transform: uppercase;
@@ -1428,7 +1429,7 @@ td {
   align-items: center;
   gap: 6px;
 }
-.schedule-nav h3 {
+.schedule-nav h2 {
   font-size: 15px;
   font-weight: 700;
 }
@@ -1496,7 +1497,7 @@ td {
   flex-shrink: 0;
 }
 .schedule-empty-hint {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--text3);
   font-style: italic;
 }
@@ -1646,6 +1647,9 @@ td {
   flex: 1;
   font-size: 13px;
 }
+.activity-text > div {
+  font-size: 12.5px;
+}
 .activity-time {
   font-size: 11px;
   color: var(--text3);
@@ -1676,7 +1680,7 @@ td {
   padding: 16px 18px;
   border-bottom: 1px solid var(--border);
 }
-.cart-header h3 {
+.cart-header h2 {
   font-family: "Sora", sans-serif;
   font-size: 15px;
   font-weight: 700;
@@ -1822,17 +1826,12 @@ td {
   margin-bottom: 28px;
 }
 .auth-logo .icon {
-  width: 56px;
-  height: 56px;
-  background: var(--gradient-accent);
-  border-radius: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  color: white;
-  margin-bottom: 14px;
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3);
+  font-size: 34px;
+  color: var(--accent);
+  margin-bottom: 10px;
 }
 .auth-logo h1 {
   font-size: 22px;
@@ -1874,7 +1873,7 @@ td {
   font-size: 48px;
   margin-bottom: 12px;
 }
-.empty-state h3 {
+.empty-state h2 {
   font-size: 17px;
   color: var(--text2);
   margin-bottom: 6px;

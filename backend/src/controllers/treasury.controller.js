@@ -79,8 +79,9 @@ const getSummary = async (req, res) => {
 // GET /api/treasury/movements — historial paginado
 const listMovements = async (req, res) => {
   try {
-    const { account_type, direction, page = 1, limit = 40 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { account_type, direction, page = 1, limit: rawLimit = 40 } = req.query;
+    const limit = Math.min(Math.max(parseInt(rawLimit) || 50, 1), 500);
+    const offset = (Math.max(parseInt(page) || 1, 1) - 1) * limit;
     const conditions = [];
     const params = [];
 

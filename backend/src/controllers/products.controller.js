@@ -10,8 +10,9 @@ const stripCost = (row, isAdmin) => {
 // GET /api/products
 const list = async (req, res) => {
   try {
-    const { search, category_id, status, sort = 'name', order = 'asc', page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { search, category_id, status, sort = 'name', order = 'asc', page = 1, limit: rawLimit = 50 } = req.query;
+    const limit = Math.min(Math.max(parseInt(rawLimit) || 50, 1), 500);
+    const offset = (Math.max(parseInt(page) || 1, 1) - 1) * limit;
     const params = [];
     const conditions = ['p.is_active = true'];
 

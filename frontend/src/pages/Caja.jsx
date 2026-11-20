@@ -615,9 +615,9 @@ export default function Caja() {
               justifyContent: "space-between",
             }}
           >
-            <h3 style={{ margin: 0 }}>
+            <h2 style={{ margin: 0 }}>
               <FiShoppingCart /> Carrito ({cart.length})
-            </h3>
+            </h2>
             {cart.length > 0 && (
               <span
                 style={{

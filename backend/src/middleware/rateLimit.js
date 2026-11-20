@@ -2,7 +2,7 @@ const rateLimit = require("express-rate-limit");
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1500,
   standardHeaders: true,
   legacyHeaders: false,
   message: "Demasiadas solicitudes desde esta IP, inténtalo más tarde",
@@ -19,7 +19,7 @@ const loginLimiter = rateLimit({
 
 const listLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 60,
+  max: 180,
   standardHeaders: true,
   legacyHeaders: false,
   message: "Límite de lectura alcanzado",
@@ -27,7 +27,7 @@ const listLimiter = rateLimit({
 
 const writeLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 20,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: "Demasiadas operaciones de escritura",

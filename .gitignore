@@ -28,3 +28,5 @@ Thumbs.db
 
 # PWA
 dev-dist/
+# Script local con credenciales de prueba
+backend/create-user.js

@@ -26,7 +26,8 @@ const Tesoreria = lazy(() => import("./pages/Tesoreria"));
 const Horarios = lazy(() => import("./pages/Horarios"));
 
 function PrivateRoute({ children }) {
-  const { user } = useAuthStore();
+  const { user, checking } = useAuthStore();
+  if (checking) return <Spinner />;
   return user ? children : <Navigate to="/login" replace />;
 }
 
@@ -41,7 +42,7 @@ function AppWithKeepAlive({ children }) {
 }
 
 function App() {
-  const { user, validateSession } = useAuthStore();
+  const { user, checking, validateSession } = useAuthStore();
 
   React.useEffect(() => {
     validateSession();
@@ -58,7 +59,7 @@ function App() {
         <Routes>
           <Route
             path="/login"
-            element={user ? <Navigate to="/" replace /> : <AuthPage />}
+            element={checking ? <Spinner /> : user ? <Navigate to="/" replace /> : <AuthPage />}
           />
           <Route
             path="/*"

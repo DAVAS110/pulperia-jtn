@@ -122,7 +122,7 @@ export default function QRPage() {
         {/* Product list */}
         <div className="card">
           <div className="card-header">
-            <h3>Productos</h3>
+            <h2>Productos</h2>
           </div>
           <div
             style={{

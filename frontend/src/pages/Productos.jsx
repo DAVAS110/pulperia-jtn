@@ -266,7 +266,7 @@ export default function Productos() {
                           className="badge"
                           style={{
                             background: p.category_color + "22",
-                            color: p.category_color,
+                            color: `color-mix(in srgb, ${p.category_color} 55%, #000)`,
                           }}
                         >
                           {p.category_name}

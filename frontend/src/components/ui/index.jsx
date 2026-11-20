@@ -101,7 +101,7 @@ export const EmptyState = ({
 }) => (
   <div className="empty-state">
     <div className="icon">{icon}</div>
-    <h3>{title}</h3>
+    <h2>{title}</h2>
     {description && <p>{description}</p>}
     {action && <div style={{ marginTop: 16 }}>{action}</div>}
   </div>

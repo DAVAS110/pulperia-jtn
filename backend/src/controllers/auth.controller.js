@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { pool } = require("../config/database");
+const { invalidateUser } = require("../middleware/auth");
 
 const parseMaxAge = (value) => {
   const text = String(value || "7d").trim();
@@ -85,8 +86,9 @@ const me = async (req, res) => {
 // GET /api/auth/users  (admin only)
 const listUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 500);
+    const offset = (page - 1) * limit;
 
     const [dataRes, countRes] = await Promise.all([
       pool.query(
@@ -154,6 +156,7 @@ const updateUser = async (req, res) => {
   try {
     const { name, role, is_active, password } = req.body;
     const { id } = req.params;
+    invalidateUser(id);
 
     // Prevent admin from deactivating/deleting themselves
     if (id === req.user.id && is_active === false)
@@ -195,6 +198,7 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    invalidateUser(id);
     if (id === req.user.id)
       return res
         .status(400)

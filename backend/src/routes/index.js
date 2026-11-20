@@ -4,6 +4,9 @@ const { loginLimiter, writeLimiter } = require("../middleware/rateLimit");
 const {
   validateLogin,
   validateCreateUser,
+  validateUpdateUser,
+  validateProduct,
+  validateCategory,
   validateTreasuryMovement,
   validateDebtPayment,
 } = require("../middleware/validation");
@@ -33,21 +36,21 @@ router.post(
   validateCreateUser,
   auth.createUser,
 );
-router.patch("/auth/users/:id", authenticate, requireAdmin, auth.updateUser);
+router.patch("/auth/users/:id", authenticate, requireAdmin, writeLimiter, validateUpdateUser, auth.updateUser);
 router.delete("/auth/users/:id", authenticate, requireAdmin, auth.deleteUser);
 
 // CATEGORIES
 router.get("/categories", authenticate, categories.list);
-router.post("/categories", authenticate, requireAdmin, categories.create);
-router.put("/categories/:id", authenticate, requireAdmin, categories.update);
+router.post("/categories", authenticate, requireAdmin, writeLimiter, validateCategory, categories.create);
+router.put("/categories/:id", authenticate, requireAdmin, writeLimiter, validateCategory, categories.update);
 router.delete("/categories/:id", authenticate, requireAdmin, categories.remove);
 
 // PRODUCTS
 router.get("/products", authenticate, products.list);
 router.get("/products/sku/:sku", authenticate, products.getBySku);
 router.get("/products/:id", authenticate, products.getOne);
-router.post("/products", authenticate, writeLimiter, products.create);
-router.put("/products/:id", authenticate, products.update);
+router.post("/products", authenticate, writeLimiter, validateProduct, products.create);
+router.put("/products/:id", authenticate, writeLimiter, validateProduct, products.update);
 router.delete("/products/:id", authenticate, requireAdmin, products.remove);
 
 // COMBOS

@@ -303,9 +303,9 @@ export default function Horarios() {
               Hoy
             </button>
           </div>
-          <h3>
+          <h2>
             {MONTHS[month]} {year}
-          </h3>
+          </h2>
         </div>
 
         {loading ? (
@@ -395,9 +395,9 @@ export default function Horarios() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-header schedule-nav">
-          <h3>
+          <h2>
             <FiAward /> Resumen
-          </h3>
+          </h2>
           <div className="history-filter-tabs">
             {PERIODS.map((p) => (
               <button
