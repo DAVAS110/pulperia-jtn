@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { debtsAPI } from "../services/api";
 import { Modal, Spinner, EmptyState, Pagination } from "../components/ui";
 import PaymentModal from "../components/PaymentModal";
@@ -13,6 +13,9 @@ import {
   FiDownload,
   FiCreditCard,
   FiCheckCircle,
+  FiChevronDown,
+  FiChevronUp,
+  FiUser,
 } from "react-icons/fi";
 
 export default function Pendientes() {
@@ -25,11 +28,17 @@ export default function Pendientes() {
   const [photoModal, setPhotoModal] = useState(null);
   const [paying, setPaying] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [expanded, setExpanded] = useState(() => new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await debtsAPI.list({ status, page, limit: 30 });
+      // Los pendientes se agrupan por persona, así que se traen todos de una vez
+      const { data } = await debtsAPI.list({
+        status,
+        page,
+        limit: status === "pendiente" ? 200 : 30,
+      });
       setDebts(data.debts);
       setTotal(data.total);
     } catch {
@@ -45,12 +54,56 @@ export default function Pendientes() {
 
   const totalPendiente = debts.reduce((s, d) => s + parseFloat(d.amount), 0);
 
+  // Agrupa por persona (sin distinguir mayúsculas ni espacios sobrantes)
+  const groups = useMemo(() => {
+    const map = new Map();
+    for (const d of debts) {
+      const key = d.customer_name.trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          customer_name: d.customer_name.trim(),
+          customer_phone: d.customer_phone,
+          debts: [],
+          total: 0,
+        });
+      }
+      const g = map.get(key);
+      // los pendientes llegan del más nuevo al más viejo: se queda el nombre más antiguo
+      g.customer_name = d.customer_name.trim();
+      g.debts.push(d);
+      g.total += parseFloat(d.amount);
+      if (!g.customer_phone && d.customer_phone) g.customer_phone = d.customer_phone;
+    }
+    return [...map.values()].sort((a, b) =>
+      a.customer_name.localeCompare(b.customer_name, "es"),
+    );
+  }, [debts]);
+
+  const toggle = (key) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   const confirmPay = async (payment) => {
     if (!paying) return;
     setProcessing(true);
     try {
-      await debtsAPI.pay(paying.id, payment);
-      toast.success(`Deuda de ${paying.customer_name} cobrada`);
+      if (paying.group) {
+        await debtsAPI.payCustomer({
+          ...payment,
+          customer_name: paying.customer_name,
+        });
+        toast.success(
+          `${paying.debts.length} pendiente(s) de ${paying.customer_name} cobrados`,
+        );
+      } else {
+        await debtsAPI.pay(paying.id, payment);
+        toast.success(`Deuda de ${paying.customer_name} cobrada`);
+      }
       setPaying(null);
       load();
     } catch (err) {
@@ -108,6 +161,77 @@ export default function Pendientes() {
                 : "Las deudas cobradas aparecerán aquí"
             }
           />
+        ) : status === "pendiente" ? (
+          <div className="debt-groups">
+            {groups.map((g) => {
+              const open = expanded.has(g.key);
+              return (
+                <div className="debt-group" key={g.key}>
+                  <div className="debt-group-head">
+                    <button
+                      className="debt-group-toggle"
+                      onClick={() => toggle(g.key)}
+                      aria-expanded={open}
+                    >
+                      <span className="debt-group-avatar">
+                        <FiUser />
+                      </span>
+                      <span className="debt-group-info">
+                        <span className="d-name">{g.customer_name}</span>
+                        <span className="d-meta">
+                          {g.debts.length} pendiente(s)
+                          {g.customer_phone ? ` · ${g.customer_phone}` : ""}
+                        </span>
+                      </span>
+                      {open ? <FiChevronUp /> : <FiChevronDown />}
+                    </button>
+                    <div className="debt-group-total">{fmt(g.total)}</div>
+                    <button
+                      className="btn btn-accent btn-sm"
+                      onClick={() => setPaying({ ...g, group: true })}
+                    >
+                      <FiCreditCard /> Cobrar todo
+                    </button>
+                  </div>
+
+                  {open && (
+                    <div className="debt-group-body">
+                      {g.debts.map((d) => (
+                        <div className="debt-group-row" key={d.id}>
+                          <div className="debt-group-row-main">
+                            <div style={{ fontSize: 12.5, color: "var(--text2)" }}>
+                              {fmtDateTime(d.created_at)}
+                            </div>
+                            <div style={{ fontSize: 13 }}>
+                              {(d.items || [])
+                                .filter(Boolean)
+                                .map((i) => `${i.product_name} × ${i.quantity}`)
+                                .join(", ") || "—"}
+                            </div>
+                          </div>
+                          <div style={{ fontWeight: 700 }}>{fmt(d.amount)}</div>
+                          <button
+                            className="btn-icon"
+                            onClick={() => setDetail(d)}
+                            title="Ver detalle"
+                          >
+                            <FiEye />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            onClick={() => setPaying(d)}
+                            title="Cobrar solo este"
+                          >
+                            <FiCreditCard />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <>
           <div className="table-wrap desktop-only">
@@ -433,13 +557,32 @@ export default function Pendientes() {
         onClose={() => setPaying(null)}
         onConfirm={confirmPay}
         processing={processing}
-        total={paying ? parseFloat(paying.amount) : 0}
-        items={(paying?.items || []).filter(Boolean).map((i) => ({
+        total={
+          paying
+            ? paying.group
+              ? paying.total
+              : parseFloat(paying.amount)
+            : 0
+        }
+        items={(paying
+          ? paying.group
+            ? paying.debts.flatMap((d) => d.items || [])
+            : paying.items || []
+          : []
+        )
+          .filter(Boolean)
+          .map((i) => ({
           name: i.product_name,
           quantity: i.quantity,
           price: parseFloat(i.unit_price),
         }))}
-        title={paying ? `Cobrar a ${paying.customer_name}` : "Cobrar"}
+        title={
+          paying
+            ? paying.group
+              ? `Cobrar todo a ${paying.customer_name}`
+              : `Cobrar a ${paying.customer_name}`
+            : "Cobrar"
+        }
         confirmLabel={
           <>
             <FiCheckCircle /> Confirmar Cobro

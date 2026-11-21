@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { productsAPI, salesAPI, combosAPI } from "../services/api";
+import { productsAPI, salesAPI, combosAPI, debtsAPI } from "../services/api";
 import { Modal } from "../components/ui";
 import PaymentModal from "../components/PaymentModal";
 import { toast } from "../store/toastStore";
@@ -33,6 +33,7 @@ export default function Caja() {
   const [receiptModal, setReceiptModal] = useState(false);
   const [activeTab, setActiveTab] = useState("productos"); // 'productos' | 'combos'
   const [debtModal, setDebtModal] = useState(false);
+  const [debtCustomers, setDebtCustomers] = useState([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [savingDebt, setSavingDebt] = useState(false);
@@ -305,6 +306,26 @@ export default function Caja() {
     setCustomerName("");
     setCustomerPhone("");
     setDebtModal(true);
+    // Clientes que ya tienen pendientes: se sugieren para sumar el nuevo a su cuenta
+    debtsAPI
+      .customers()
+      .then(({ data }) => setDebtCustomers(data.customers || []))
+      .catch(() => setDebtCustomers([]));
+  };
+
+  const existingCustomer = debtCustomers.find(
+    (c) =>
+      c.customer_name.trim().toLowerCase() === customerName.trim().toLowerCase(),
+  );
+
+  const onCustomerNameChange = (value) => {
+    setCustomerName(value);
+    const match = debtCustomers.find(
+      (c) => c.customer_name.trim().toLowerCase() === value.trim().toLowerCase(),
+    );
+    if (match?.customer_phone && !customerPhone) {
+      setCustomerPhone(match.customer_phone);
+    }
   };
 
   const confirmDebt = async () => {
@@ -836,10 +857,23 @@ export default function Caja() {
           <input
             type="text"
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            onChange={(e) => onCustomerNameChange(e.target.value)}
             placeholder="Ej: Juan Pérez"
+            list="debt-customers"
+            autoComplete="off"
             autoFocus
           />
+          <datalist id="debt-customers">
+            {debtCustomers.map((c) => (
+              <option key={c.customer_name} value={c.customer_name} />
+            ))}
+          </datalist>
+          {existingCustomer && (
+            <div style={{ fontSize: 12.5, color: "var(--text2)", marginTop: 6 }}>
+              Ya tiene {existingCustomer.count} pendiente(s) por{" "}
+              {fmt(existingCustomer.total)}. Este se sumará a su cuenta.
+            </div>
+          )}
         </div>
         <div className="field">
           <label>Teléfono (opcional)</label>

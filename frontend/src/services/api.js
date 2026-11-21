@@ -76,6 +76,8 @@ export const combosAPI = {
 export const debtsAPI = {
   list: (params) => api.get("/debts", { params }),
   pay: (id, data) => api.post(`/debts/${id}/pay`, data),
+  payCustomer: (data) => api.post("/debts/pay-customer", data),
+  customers: () => api.get("/debts/customers"),
 };
 
 export const shiftsAPI = {

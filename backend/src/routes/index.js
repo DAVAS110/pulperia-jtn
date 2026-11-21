@@ -71,6 +71,14 @@ router.delete("/sales/:id", authenticate, requireAdmin, sales.cancel);
 
 // DEBTS (pendientes / fiado)
 router.get("/debts", authenticate, debts.list);
+router.get("/debts/customers", authenticate, debts.customers);
+router.post(
+  "/debts/pay-customer",
+  authenticate,
+  writeLimiter,
+  validateDebtPayment,
+  debts.payCustomer,
+);
 router.post(
   "/debts/:id/pay",
   authenticate,
