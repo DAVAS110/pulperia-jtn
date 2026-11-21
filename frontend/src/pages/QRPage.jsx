@@ -111,14 +111,7 @@ export default function QRPage() {
           <p>Genera e imprime QR por producto</p>
         </div>
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "300px 1fr",
-          gap: 20,
-          alignItems: "start",
-        }}
-      >
+      <div className="qr-layout">
         {/* Product list */}
         <div className="card">
           <div className="card-header">

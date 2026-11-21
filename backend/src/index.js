@@ -61,6 +61,17 @@ app.use((req, res) =>
 
 // ─── ERROR HANDLER ────────────────────────────────────────
 app.use((err, req, res, next) => {
+  // Errores del cliente (body demasiado grande, JSON roto…): se devuelve su 4xx, no un 500
+  const status = err.status || err.statusCode;
+  if (status >= 400 && status < 500) {
+    const message =
+      err.type === "entity.too.large"
+        ? "El cuerpo de la petición es demasiado grande"
+        : err.type === "entity.parse.failed"
+          ? "JSON inválido"
+          : "Solicitud inválida";
+    return res.status(status).json({ error: message });
+  }
   console.error(err.stack);
   res.status(500).json({ error: "Error interno del servidor" });
 });

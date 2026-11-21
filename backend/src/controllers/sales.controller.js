@@ -361,8 +361,17 @@ const cancel = async (req, res) => {
     ]);
 
     const saleData = saleRes.rows[0];
-    const cancelAccountType =
-      saleData.payment_method === "efectivo" ? "caja" : "sinpe";
+    // En una venta fiada el método de pago de la venta sigue siendo "fiado":
+    // el dinero entró a la cuenta con la que se cobró la deuda.
+    let paidMethod = saleData.payment_method;
+    if (paidMethod === "fiado") {
+      const debtRes = await client.query(
+        "SELECT paid_payment_method FROM debts WHERE sale_id = $1 AND status = 'pagada'",
+        [req.params.id],
+      );
+      paidMethod = debtRes.rows[0]?.paid_payment_method || "efectivo";
+    }
+    const cancelAccountType = paidMethod === "efectivo" ? "caja" : "sinpe";
     await client.query(
       "UPDATE treasury_accounts SET balance = balance - $1, updated_at = NOW() WHERE type = $2",
       [saleData.total, cancelAccountType],
