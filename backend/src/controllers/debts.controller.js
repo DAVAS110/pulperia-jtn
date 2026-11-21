@@ -17,7 +17,7 @@ const list = async (req, res) => {
              d.paid_received_by, d.created_at,
              u.name AS created_by_name,
              json_agg(json_build_object(
-               'product_name', si.product_name, 'product_sku', si.product_sku,
+               'product_id', si.product_id, 'product_name', si.product_name, 'product_sku', si.product_sku,
                'quantity', si.quantity, 'unit_price', si.unit_price, 'subtotal', si.subtotal
              )) AS items
       FROM debts d
@@ -194,4 +194,180 @@ const customers = async (req, res) => {
   }
 };
 
-module.exports = { list, pay, payCustomer, customers };
+// PUT /api/debts/:id/items — edita los productos de un pendiente.
+// Body: { items: [{ product_id, quantity }] } con la cantidad FINAL de cada producto
+// (0 = quitar). Los productos que no se mencionan y los combos no se tocan.
+// Agregar lo puede hacer cualquier usuario; reducir o quitar solo un admin.
+const updateItems = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const wanted = new Map();
+    for (const it of req.body.items || []) {
+      const qty = parseInt(it.quantity, 10);
+      if (!it.product_id || !Number.isInteger(qty) || qty < 0 || qty > 9999)
+        throw new Error("Producto o cantidad inválidos");
+      wanted.set(it.product_id, qty);
+    }
+    if (wanted.size === 0) throw new Error("No hay cambios que guardar");
+
+    await client.query("BEGIN");
+    const debtRes = await client.query(
+      "SELECT * FROM debts WHERE id = $1 AND status = 'pendiente' FOR UPDATE",
+      [req.params.id],
+    );
+    const debt = debtRes.rows[0];
+    if (!debt) throw new Error("Pendiente no encontrado o ya fue cobrado");
+
+    const linesRes = await client.query(
+      "SELECT * FROM sale_items WHERE sale_id = $1 AND product_sku <> 'COMBO' ORDER BY created_at",
+      [debt.sale_id],
+    );
+    const existing = new Map(); // product_id -> { qty, unit_price, lines }
+    for (const l of linesRes.rows) {
+      const e = existing.get(l.product_id) || {
+        qty: 0,
+        unit_price: l.unit_price,
+        lines: [],
+      };
+      e.qty += l.quantity;
+      e.lines.push(l);
+      existing.set(l.product_id, e);
+    }
+
+    const isAdmin = req.user.role === "admin";
+    let changed = false;
+
+    for (const [productId, newQty] of wanted) {
+      const old = existing.get(productId);
+      const oldQty = old ? old.qty : 0;
+      const delta = newQty - oldQty;
+      if (delta === 0) continue;
+      changed = true;
+
+      if (delta < 0 && !isAdmin)
+        throw new Error("Solo un administrador puede quitar o reducir productos");
+
+      const prodRes = await client.query(
+        "SELECT id, name, sku, sale_price, stock, is_active FROM products WHERE id = $1 FOR UPDATE",
+        [productId],
+      );
+      const product = prodRes.rows[0];
+      if (!product) throw new Error("Producto no encontrado");
+      if (delta > 0) {
+        if (!product.is_active)
+          throw new Error(`El producto ${product.name} no está activo`);
+        if (product.stock < delta)
+          throw new Error(
+            `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`,
+          );
+      }
+
+      // El precio ya cobrado se respeta; un producto nuevo entra al precio actual
+      const unitPrice = old ? parseFloat(old.unit_price) : parseFloat(product.sale_price);
+
+      if (old) {
+        await client.query("DELETE FROM sale_items WHERE id = ANY($1::uuid[])", [
+          old.lines.map((l) => l.id),
+        ]);
+      }
+      if (newQty > 0) {
+        await client.query(
+          `INSERT INTO sale_items (sale_id, product_id, product_name, product_sku, quantity, unit_price, subtotal)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [
+            debt.sale_id,
+            product.id,
+            old ? old.lines[0].product_name : product.name,
+            old ? old.lines[0].product_sku : product.sku,
+            newQty,
+            unitPrice,
+            unitPrice * newQty,
+          ],
+        );
+      }
+
+      await client.query("UPDATE products SET stock = stock - $1 WHERE id = $2", [
+        delta,
+        product.id,
+      ]);
+      await client.query(
+        `INSERT INTO inventory_movements (product_id, user_id, type, quantity, reason, reference_id)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [
+          product.id,
+          req.user.id,
+          delta > 0 ? "venta" : "entrada",
+          Math.abs(delta),
+          delta > 0
+            ? `Producto agregado a pendiente de ${debt.customer_name}`
+            : `Producto quitado de pendiente de ${debt.customer_name}`,
+          debt.sale_id,
+        ],
+      );
+    }
+
+    if (!changed) throw new Error("No hay cambios que guardar");
+
+    const totalRes = await client.query(
+      "SELECT COALESCE(SUM(subtotal), 0) AS total, COUNT(*)::int AS n FROM sale_items WHERE sale_id = $1",
+      [debt.sale_id],
+    );
+    if (totalRes.rows[0].n === 0)
+      throw new Error(
+        "Un pendiente no puede quedar sin productos. Si ya no corresponde, anula la venta.",
+      );
+    const total = totalRes.rows[0].total;
+    await client.query("UPDATE sales SET subtotal = $1, total = $1 WHERE id = $2", [
+      total,
+      debt.sale_id,
+    ]);
+    await client.query("UPDATE debts SET amount = $1 WHERE id = $2", [total, debt.id]);
+
+    await client.query("COMMIT");
+
+    const io = getIO();
+    if (io) io.emit("inventory-updated", { type: "debt_edited", debtId: debt.id });
+
+    res.json({ message: "Pendiente actualizado", amount: parseFloat(total) });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    const forbidden = /administrador/.test(err.message || "");
+    res
+      .status(forbidden ? 403 : 400)
+      .json({ error: err.message || "Error al actualizar el pendiente" });
+  } finally {
+    client.release();
+  }
+};
+
+// PATCH /api/debts/customer — corrige nombre/teléfono de una persona en todos sus pendientes.
+// Si el nuevo nombre ya existe, los pendientes quedan unidos en un solo grupo.
+const updateCustomer = async (req, res) => {
+  try {
+    const { customer_name, new_name, new_phone } = req.body;
+    const name = new_name?.trim();
+    if (!customer_name?.trim() || !name)
+      return res.status(400).json({ error: "Falta el nombre del cliente" });
+
+    const sets = ["customer_name = $2"];
+    const params = [customer_name.trim(), name];
+    if (new_phone !== undefined) {
+      sets.push("customer_phone = $3");
+      params.push(new_phone?.trim() || null);
+    }
+    const { rowCount } = await pool.query(
+      `UPDATE debts SET ${sets.join(", ")}
+       WHERE status = 'pendiente' AND ${NAME_KEY} = lower(trim($1))`,
+      params,
+    );
+    if (rowCount === 0)
+      return res.status(404).json({ error: "Ese cliente no tiene pendientes" });
+    res.json({ message: "Cliente actualizado", updated: rowCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al actualizar el cliente" });
+  }
+};
+
+module.exports = { list, pay, payCustomer, customers, updateItems, updateCustomer };

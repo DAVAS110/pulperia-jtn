@@ -87,7 +87,23 @@ const validateCategory = [
   handleValidationErrors,
 ];
 
+const validateDebtItems = [
+  body("items").isArray({ min: 1, max: 100 }).withMessage("items inválidos"),
+  body("items.*.product_id").isUUID().withMessage("product_id inválido"),
+  body("items.*.quantity").isInt({ min: 0, max: 9999 }).withMessage("cantidad inválida"),
+  handleValidationErrors,
+];
+
+const validateRenameCustomer = [
+  body("customer_name").trim().isLength({ min: 1, max: 150 }).withMessage("cliente inválido"),
+  body("new_name").trim().isLength({ min: 1, max: 150 }).withMessage("nombre inválido"),
+  body("new_phone").optional({ nullable: true }).trim().isLength({ max: 30 }).withMessage("teléfono inválido"),
+  handleValidationErrors,
+];
+
 module.exports = {
+  validateDebtItems,
+  validateRenameCustomer,
   validateUpdateUser,
   validateProduct,
   validateCategory,

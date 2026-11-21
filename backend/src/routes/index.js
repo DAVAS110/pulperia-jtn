@@ -9,6 +9,8 @@ const {
   validateCategory,
   validateTreasuryMovement,
   validateDebtPayment,
+  validateDebtItems,
+  validateRenameCustomer,
 } = require("../middleware/validation");
 const auth = require("../controllers/auth.controller");
 const categories = require("../controllers/categories.controller");
@@ -72,6 +74,20 @@ router.delete("/sales/:id", authenticate, requireAdmin, sales.cancel);
 // DEBTS (pendientes / fiado)
 router.get("/debts", authenticate, debts.list);
 router.get("/debts/customers", authenticate, debts.customers);
+router.patch(
+  "/debts/customer",
+  authenticate,
+  writeLimiter,
+  validateRenameCustomer,
+  debts.updateCustomer,
+);
+router.put(
+  "/debts/:id/items",
+  authenticate,
+  writeLimiter,
+  validateDebtItems,
+  debts.updateItems,
+);
 router.post(
   "/debts/pay-customer",
   authenticate,

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { debtsAPI } from "../services/api";
 import { Modal, Spinner, EmptyState, Pagination } from "../components/ui";
 import PaymentModal from "../components/PaymentModal";
+import EditDebtModal from "../components/EditDebtModal";
+import useAuthStore from "../store/authStore";
 import { toast } from "../store/toastStore";
 import { fmt, fmtDateTime } from "../utils/helpers";
 import {
@@ -16,6 +18,7 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiUser,
+  FiEdit2,
 } from "react-icons/fi";
 
 export default function Pendientes() {
@@ -29,6 +32,11 @@ export default function Pendientes() {
   const [paying, setPaying] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [expanded, setExpanded] = useState(() => new Set());
+  const { isAdmin } = useAuthStore();
+  const [editing, setEditing] = useState(null); // pendiente cuyos productos se editan
+  const [renaming, setRenaming] = useState(null); // grupo cuyo cliente se corrige
+  const [renameForm, setRenameForm] = useState({ name: "", phone: "" });
+  const [savingRename, setSavingRename] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,6 +87,30 @@ export default function Pendientes() {
       a.customer_name.localeCompare(b.customer_name, "es"),
     );
   }, [debts]);
+
+  const openRename = (g) => {
+    setRenameForm({ name: g.customer_name, phone: g.customer_phone || "" });
+    setRenaming(g);
+  };
+
+  const saveRename = async () => {
+    if (!renameForm.name.trim()) return toast.error("Indica el nombre del cliente");
+    setSavingRename(true);
+    try {
+      await debtsAPI.updateCustomer({
+        customer_name: renaming.customer_name,
+        new_name: renameForm.name.trim(),
+        new_phone: renameForm.phone.trim(),
+      });
+      toast.success("Cliente actualizado");
+      setRenaming(null);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Error al actualizar el cliente");
+    } finally {
+      setSavingRename(false);
+    }
+  };
 
   const toggle = (key) =>
     setExpanded((prev) => {
@@ -187,6 +219,14 @@ export default function Pendientes() {
                     </button>
                     <div className="debt-group-total">{fmt(g.total)}</div>
                     <button
+                      className="btn-icon"
+                      onClick={() => openRename(g)}
+                      title="Corregir nombre o teléfono"
+                      aria-label="Corregir nombre o teléfono"
+                    >
+                      <FiEdit2 />
+                    </button>
+                    <button
                       className="btn btn-accent btn-sm"
                       onClick={() => setPaying({ ...g, group: true })}
                     >
@@ -216,6 +256,14 @@ export default function Pendientes() {
                             title="Ver detalle"
                           >
                             <FiEye />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            onClick={() => setEditing(d)}
+                            title="Editar productos"
+                            aria-label="Editar productos"
+                          >
+                            <FiEdit2 />
                           </button>
                           <button
                             className="btn-icon"
@@ -549,6 +597,62 @@ export default function Pendientes() {
             </div>
           </>
         )}
+      </Modal>
+
+      {/* ── Editar productos de un pendiente ── */}
+      {editing && (
+        <EditDebtModal
+          debt={editing}
+          isAdmin={isAdmin()}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            load();
+          }}
+        />
+      )}
+
+      {/* ── Corregir nombre / teléfono del cliente ── */}
+      <Modal
+        open={!!renaming}
+        onClose={() => setRenaming(null)}
+        title="Corregir cliente"
+        maxWidth={420}
+      >
+        <div style={{ fontSize: 12.5, color: "var(--text2)", marginBottom: 12 }}>
+          Se actualiza en todos sus pendientes. Si el nombre ya existe en otro
+          cliente, los pendientes quedan unidos en un solo grupo.
+        </div>
+        <div className="field">
+          <label>Nombre</label>
+          <input
+            type="text"
+            value={renameForm.name}
+            onChange={(e) => setRenameForm((f) => ({ ...f, name: e.target.value }))}
+            autoFocus
+          />
+        </div>
+        <div className="field">
+          <label>Teléfono</label>
+          <input
+            type="text"
+            value={renameForm.phone}
+            onChange={(e) => setRenameForm((f) => ({ ...f, phone: e.target.value }))}
+            placeholder="Opcional"
+          />
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={() => setRenaming(null)}>
+            Cancelar
+          </button>
+          <button
+            className="btn btn-accent"
+            onClick={saveRename}
+            disabled={savingRename}
+          >
+            {savingRename ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
       </Modal>
 
       {/* ── Cobrar pendiente (mismo modal de pago que Caja) ── */}

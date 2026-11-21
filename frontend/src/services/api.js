@@ -78,6 +78,8 @@ export const debtsAPI = {
   pay: (id, data) => api.post(`/debts/${id}/pay`, data),
   payCustomer: (data) => api.post("/debts/pay-customer", data),
   customers: () => api.get("/debts/customers"),
+  updateItems: (id, items) => api.put(`/debts/${id}/items`, { items }),
+  updateCustomer: (data) => api.patch("/debts/customer", data),
 };
 
 export const shiftsAPI = {
