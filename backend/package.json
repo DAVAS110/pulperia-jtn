@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "test:qa": "node --test --test-concurrency=1 \"tests/qa/*.test.js\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
